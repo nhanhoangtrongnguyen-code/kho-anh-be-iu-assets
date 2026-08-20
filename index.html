@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <title>Kho Ảnh Xinh Của Em Bé Iu 📸💕</title>
+
+  <!-- Icon ngoài màn hình iPhone -->
+  <link
+    rel="apple-touch-icon"
+    href="./icon.png"
+  >
+
+  <!-- Favicon -->
+  <link
+    rel="icon"
+    type="image/png"
+    href="./icon.png"
+  >
+
+  <!-- Manifest -->
+  <link
+    rel="manifest"
+    href="./manifest.webmanifest"
+  >
+
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+
+  <meta
+    name="apple-mobile-web-app-title"
+    content="Kho Ảnh Bé Iu"
+  >
+
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="default"
+  >
+
+  <meta
+    name="theme-color"
+    content="#ffe6ea"
+  >
+
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+
+      -webkit-tap-highlight-color: transparent;
+    }
+
+
+    body {
+
+      margin: 0;
+
+      min-height: 100vh;
+
+      padding:
+        max(24px, env(safe-area-inset-top))
+        18px
+        max(30px, env(safe-area-inset-bottom));
+
+      display: flex;
+
+      align-items: center;
+      justify-content: center;
+
+      background:
+        linear-gradient(
+          135deg,
+          #ffe6ea 0%,
+          #ffe4e1 100%
+        );
+
+      text-align: center;
+    }
+
+
+    .card {
+
+      width: 100%;
+      max-width: 400px;
+
+      padding: 30px 22px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.96
+        );
+
+      border-radius: 26px;
+
+      box-shadow:
+        0 12px 30px
+        rgba(
+          255,
+          182,
+          193,
+          0.35
+        );
+    }
+
+
+    .icon {
+
+      width: 115px;
+      height: 115px;
+
+      display: block;
+
+      margin:
+        0 auto
+        16px;
+
+      object-fit: cover;
+
+      border-radius: 25px;
+
+      box-shadow:
+        0 8px 20px
+        rgba(
+          255,
+          77,
+          121,
+          0.18
+        );
+    }
+
+
+    h1 {
+
+      margin:
+        0
+        0
+        12px;
+
+      color: #ff4d79;
+
+      font-size: 22px;
+      line-height: 1.3;
+    }
+
+
+    .message {
+
+      margin:
+        0
+        0
+        20px;
+
+      padding: 13px;
+
+      color: #666;
+
+      background: #fff5f7;
+
+      border-radius: 13px;
+
+      border-left:
+        4px solid #ff4d79;
+
+      font-size: 14px;
+
+      line-height: 1.55;
+
+      text-align: left;
+    }
+
+
+    .open-button {
+
+      width: 100%;
+
+      border: none;
+
+      padding: 15px 18px;
+
+      border-radius: 30px;
+
+      background:
+        linear-gradient(
+          135deg,
+          #ff4d79,
+          #ff1a53
+        );
+
+      color: white;
+
+      font-size: 16px;
+
+      font-weight: 700;
+
+      cursor: pointer;
+
+      box-shadow:
+        0 6px 15px
+        rgba(
+          255,
+          77,
+          121,
+          0.28
+        );
+
+      transition:
+        transform 0.15s,
+        opacity 0.15s;
+    }
+
+
+    .open-button:active {
+
+      transform: scale(0.98);
+    }
+
+
+    .small-note {
+
+      margin-top: 15px;
+
+      color: #d87093;
+
+      font-size: 12.5px;
+
+      line-height: 1.5;
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+  <div class="card">
+
+
+    <img
+      class="icon"
+      src="./icon.png"
+      alt="Kho Ảnh Xinh Của Em Bé Iu"
+    >
+
+
+    <h1>
+      Kho Ảnh Xinh Của Em Bé Iu 📸💕
+    </h1>
+
+
+    <div
+      class="message"
+      id="message"
+    >
+
+      💌 Em bé bấm vô đây là qua kho ảnh của tụi mình nèeee 💕
+      <br><br>
+      Ảnh xinh xinh xàm xàm gì cũng đem qua cho anh giữ hết nhaaa hihi!
+
+    </div>
+
+
+    <button
+      class="open-button"
+      onclick="openPhotoApp()"
+    >
+
+      Vô kho ảnh với anh nèee 💕
+
+    </button>
+
+
+    <div
+      class="small-note"
+      id="smallNote"
+    >
+
+      Anh mở cửa sẵn cho bé rùiii 📸💗
+
+    </div>
+
+
+  </div>
+
+
+
+  <script>
+
+
+    const APP_URL =
+      "https://script.google.com/macros/s/AKfycbzaE9NzExTaWnapbL98OFYhf29Vz7hNJwc2tXXjFOQT-OQqH8b6BpuR43iG6L30m1DvSA/exec";
+
+
+    function openPhotoApp() {
+
+      document
+        .getElementById("message")
+        .innerHTML =
+          "💕 Qua với anh nèeee,<br>anh đang mở kho ảnh cho bé óooo 💗";
+
+
+      document
+        .getElementById("smallNote")
+        .innerText =
+          "Chờ anh xíu xíuuu nhaaa ✨";
+
+
+      window.location.href =
+        APP_URL;
+    }
+
+
+
+    /*
+      Nếu mở từ icon ngoài Home Screen
+      thì tự động đưa bé vào Apps Script.
+
+      Nếu đang mở bằng Safari bình thường
+      thì giữ launcher lại để có thể Add to Home Screen.
+    */
+
+    const isStandalone =
+
+      window.matchMedia(
+        "(display-mode: standalone)"
+      ).matches
+
+      ||
+
+      window.navigator.standalone === true;
+
+
+
+    if (isStandalone) {
+
+
+      document
+        .getElementById("message")
+        .innerHTML =
+          "💕 Anh đang mở kho ảnh cho bé óooo,<br>xíu xíuuu là tới nèeee 💗";
+
+
+      document
+        .getElementById("smallNote")
+        .innerText =
+          "Đi qua với anh nàooo 📸💕";
+
+
+      setTimeout(
+
+        function() {
+
+          window.location.replace(
+            APP_URL
+          );
+
+        },
+
+        450
+
+      );
+    }
+
+
+  </script>
+
+
+</body>
+
+</html>
