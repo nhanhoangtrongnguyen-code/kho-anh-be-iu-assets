@@ -9,45 +9,117 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   >
 
-  <title>Kho Ảnh Xinh Của Em Bé Iu 📸💕</title>
-
 
   <!-- =====================================================
-       ICON
-
-       Đây là icon iPhone sẽ dùng khi Add to Home Screen.
+       FINAL APP URL
   ====================================================== -->
 
   <link
-    rel="apple-touch-icon"
-    href="icon.png"
+    rel="preconnect"
+    href="https://script.google.com"
   >
+
+  <link
+    rel="dns-prefetch"
+    href="//script.google.com"
+  >
+
+  <link
+    rel="preconnect"
+    href="https://script.googleusercontent.com"
+  >
+
+  <link
+    rel="dns-prefetch"
+    href="//script.googleusercontent.com"
+  >
+
+
+  <!-- =====================================================
+       REDIRECT CỰC SỚM
+
+       Safari bình thường:
+       → KHÔNG redirect
+       → để iPhone đọc icon và Add to Home Screen.
+
+       Home Screen / standalone:
+       → redirect NGAY
+       → không setTimeout
+       → không delay
+       → không render màn hình trung gian trước.
+  ====================================================== -->
+
+  <script>
+    (function () {
+
+      const APP_URL =
+        "https://script.google.com/macros/s/AKfycbzc1h3USKNaFo_4TecPvlpvO9Qi-JQRBvs92CwEyeNhsDaryz5gvzlISn1tv2eTsxzS/exec";
+
+
+      const iosStandalone =
+        window.navigator.standalone === true;
+
+
+      const displayStandalone =
+        window.matchMedia &&
+        window.matchMedia(
+          "(display-mode: standalone)"
+        ).matches;
+
+
+      if (
+        iosStandalone ||
+        displayStandalone
+      ) {
+
+        window.location.replace(
+          APP_URL
+        );
+      }
+
+    })();
+  </script>
+
+
+  <!-- =====================================================
+       HOME SCREEN ICON
+  ====================================================== -->
+
+  <title>
+    Kho Ảnh Xinh Của Em Bé Iu 📸💕
+  </title>
+
+
+  <link
+    rel="apple-touch-icon"
+    href="./icon.png"
+  >
+
 
   <link
     rel="icon"
     type="image/png"
-    href="icon.png"
+    href="./icon.png"
   >
 
-
-  <!-- =====================================================
-       HOME SCREEN APP MODE
-  ====================================================== -->
 
   <meta
     name="apple-mobile-web-app-capable"
     content="yes"
   >
 
+
   <meta
     name="mobile-web-app-capable"
     content="yes"
   >
 
+
   <meta
     name="apple-mobile-web-app-title"
     content="Kho Ảnh Bé Iu"
   >
+
 
   <meta
     name="apple-mobile-web-app-status-bar-style"
@@ -56,58 +128,10 @@
 
 
   <!-- =====================================================
-       REDIRECT
+       TRANG NÀY CHỈ DÙNG KHI MỞ BẰNG SAFARI
 
-       QUAN TRỌNG:
-
-       - Safari bình thường:
-         KHÔNG redirect
-         để mình Add to Home Screen với icon hồng.
-
-       - Khi mở từ Home Screen:
-         redirect NGAY sang Apps Script.
-         Không setTimeout.
-         Không delay 450 ms.
+       Home Screen sẽ redirect trước khi cần render nó.
   ====================================================== -->
-
-  <script>
-
-    const APP_URL =
-      "https://script.google.com/macros/s/AKfycbzc1h3USKNaFo_4TecPvlpvO9Qi-JQRBvs92CwEyeNhsDaryz5gvzlISn1tv2eTsxzS/exec";
-
-
-    const isIOSStandalone =
-      window.navigator.standalone === true;
-
-
-    const isStandaloneDisplay =
-      window.matchMedia &&
-      window.matchMedia(
-        "(display-mode: standalone)"
-      ).matches;
-
-
-    if (
-      isIOSStandalone ||
-      isStandaloneDisplay
-    ) {
-
-      /*
-        Redirect ngay lập tức.
-
-        KHÔNG:
-        - setTimeout
-        - màn hình chờ
-        - delay 450 ms
-      */
-
-      window.location.replace(
-        APP_URL
-      );
-    }
-
-  </script>
-
 
   <style>
 
@@ -158,6 +182,11 @@
       width: 100%;
       max-width: 420px;
 
+      padding:
+        28px 22px;
+
+      border-radius: 26px;
+
       background:
         rgba(
           255,
@@ -165,11 +194,6 @@
           255,
           0.96
         );
-
-      padding:
-        28px 22px;
-
-      border-radius: 26px;
 
       text-align: center;
 
@@ -185,15 +209,15 @@
 
 
     .icon {
+      display: block;
+
       width: 88px;
       height: 88px;
 
-      border-radius: 22px;
-
-      display: block;
-
       margin:
         0 auto 16px;
+
+      border-radius: 22px;
     }
 
 
@@ -201,74 +225,51 @@
       margin:
         0 0 12px;
 
-      color:
-        #ff4d79;
+      color: #ff4d79;
 
-      font-size:
-        21px;
-
-      line-height:
-        1.3;
+      font-size: 21px;
+      line-height: 1.3;
     }
 
 
     p {
-      margin:
-        0;
+      margin: 0;
 
-      color:
-        #666;
+      color: #666;
 
-      font-size:
-        14px;
-
-      line-height:
-        1.6;
+      font-size: 14px;
+      line-height: 1.6;
     }
 
 
     .hint {
-      margin-top:
-        16px;
+      margin-top: 16px;
 
       padding:
         12px 14px;
 
-      background:
-        #fff0f3;
+      border-radius: 14px;
 
-      border-radius:
-        14px;
+      background: #fff0f3;
 
-      color:
-        #d87093;
+      color: #d87093;
 
-      font-size:
-        13px;
-
-      line-height:
-        1.55;
+      font-size: 13px;
+      line-height: 1.55;
     }
 
 
     .open-button {
-      display:
-        inline-block;
+      display: inline-block;
 
-      width:
-        100%;
+      width: 100%;
 
-      margin-top:
-        18px;
+      margin-top: 18px;
 
       padding:
         14px 18px;
 
-      border:
-        none;
-
-      border-radius:
-        28px;
+      border-radius: 28px;
 
       background:
         linear-gradient(
@@ -277,20 +278,12 @@
           #ff1a53
         );
 
-      color:
-        white;
+      color: white;
 
-      font-size:
-        15px;
+      font-size: 15px;
+      font-weight: 700;
 
-      font-weight:
-        700;
-
-      text-decoration:
-        none;
-
-      cursor:
-        pointer;
+      text-decoration: none;
 
       box-shadow:
         0 6px 15px
@@ -309,18 +302,10 @@
 
 <body>
 
-  <!--
-    Phần này chỉ hiện khi mở GitHub bằng Safari bình thường.
-
-    Khi chạy từ Home Screen,
-    redirect xảy ra ngay trong <head>
-    nên gần như không nhìn thấy màn hình này.
-  -->
-
   <div class="card">
 
     <img
-      src="icon.png"
+      src="./icon.png"
       class="icon"
       alt="Kho Ảnh Bé Iu"
     >
@@ -342,11 +327,14 @@
 
       <br>
 
-      <b>Chia sẻ ↑ → Thêm vào Màn hình chính</b>
+      <b>
+        Chia sẻ ↑ → Thêm vào Màn hình chính
+      </b>
 
       <br><br>
 
-      Sau đó bé chỉ cần bấm icon xinh xinh trên màn hình là được nèeee 🌸
+      Sau đó bé chỉ cần bấm icon xinh xinh
+      trên màn hình là được nèeee 🌸
 
     </div>
 
