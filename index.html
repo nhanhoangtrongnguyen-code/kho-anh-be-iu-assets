@@ -71,17 +71,6 @@
     href="//script.google.com"
   >
 
-  <link
-    rel="preconnect"
-    href="https://drive.google.com"
-  >
-
-  <link
-    rel="dns-prefetch"
-    href="//drive.google.com"
-  >
-
-
   <!-- =====================================================
        DETECT MODE EARLY
 
@@ -596,6 +585,38 @@
     }
 
 
+    .gallery-notice {
+
+      display: none;
+
+      margin:
+        2px 0 4px;
+
+      padding:
+        11px 13px;
+
+      border-radius: 14px;
+
+      background:
+        #fff8fa;
+
+      border:
+        1px solid #ffd3dd;
+
+      color:
+        #d87093;
+
+      font-size: 12.5px;
+
+      line-height: 1.5;
+    }
+
+
+    .gallery-notice.show {
+      display: block;
+    }
+
+
     /* =====================================================
        BACK
     ====================================================== */
@@ -688,14 +709,6 @@
       "https://script.google.com/macros/s/AKfycbzc1h3USKNaFo_4TecPvlpvO9Qi-JQRBvs92CwEyeNhsDaryz5gvzlISn1tv2eTsxzS/exec";
 
 
-    const BABY_DRIVE_URL =
-      "https://drive.google.com/drive/folders/1K7SkRCILDERg0Zv6sPDBmP6NqlRar4hJ";
-
-
-    const COUPLE_DRIVE_URL =
-      "https://drive.google.com/drive/folders/1q6KOPDlRL1hs-JnH6acFXsPDRLASnHoV";
-
-
     /* =====================================================
        INITIALIZE
     ====================================================== */
@@ -708,18 +721,6 @@
         const uploadLink =
           document.getElementById(
             "uploadLink"
-          );
-
-
-        const babyDriveLink =
-          document.getElementById(
-            "babyDriveLink"
-          );
-
-
-        const coupleDriveLink =
-          document.getElementById(
-            "coupleDriveLink"
           );
 
 
@@ -737,14 +738,6 @@
 
         uploadLink.href =
           APP_URL;
-
-
-        babyDriveLink.href =
-          BABY_DRIVE_URL;
-
-
-        coupleDriveLink.href =
-          COUPLE_DRIVE_URL;
 
 
         /* =================================================
@@ -827,6 +820,30 @@
 
 
     /* =====================================================
+       GALLERY PLACEHOLDER
+
+       Không chứa Drive URL.
+       Gallery an toàn sẽ được nối vào ở bước sau.
+    ====================================================== */
+
+    function showGalleryComingSoon() {
+
+      const notice =
+        document.getElementById(
+          "galleryNotice"
+        );
+
+
+      if (notice) {
+
+        notice.classList.add(
+          "show"
+        );
+      }
+    }
+
+
+    /* =====================================================
        BACK TO MAIN MENU
     ====================================================== */
 
@@ -844,9 +861,23 @@
         );
 
 
+      const galleryNotice =
+        document.getElementById(
+          "galleryNotice"
+        );
+
+
       albumMenu.classList.remove(
         "show"
       );
+
+
+      if (galleryNotice) {
+
+        galleryNotice.classList.remove(
+          "show"
+        );
+      }
 
 
       mainMenu.classList.add(
@@ -1039,12 +1070,10 @@
 
       <!-- BABY -->
 
-      <a
-        id="babyDriveLink"
+      <button
+        type="button"
         class="app-button baby-button"
-        href="#"
-        target="_blank"
-        rel="noopener noreferrer"
+        onclick="showGalleryComingSoon()"
       >
 
         <span class="button-icon">
@@ -1065,17 +1094,15 @@
 
         </span>
 
-      </a>
+      </button>
 
 
       <!-- COUPLE -->
 
-      <a
-        id="coupleDriveLink"
+      <button
+        type="button"
         class="app-button couple-button"
-        href="#"
-        target="_blank"
-        rel="noopener noreferrer"
+        onclick="showGalleryComingSoon()"
       >
 
         <span class="button-icon">
@@ -1096,7 +1123,16 @@
 
         </span>
 
-      </a>
+      </button>
+
+
+      <div
+        id="galleryNotice"
+        class="gallery-notice"
+      >
+        💕 Phần xem ảnh đang được anh nâng cấp nèeee.
+        Mình sẽ nối Gallery an toàn vào đây ở bước sau nhaaa 💗
+      </div>
 
 
       <!-- BACK -->
