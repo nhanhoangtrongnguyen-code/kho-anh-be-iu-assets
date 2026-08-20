@@ -71,6 +71,7 @@
     href="//script.google.com"
   >
 
+
   <!-- =====================================================
        DETECT MODE EARLY
 
@@ -702,11 +703,199 @@
   <script>
 
     /* =====================================================
-       URLS
+       URLS + PERSISTENT DEVICE CREDENTIAL BRIDGE
+
+       GitHub is the first-party Home Screen origin.
+       It keeps the device credential in its own localStorage.
+
+       The credential is only handed to Apps Script through
+       the URL fragment (#...), never through a query string.
     ====================================================== */
 
     const APP_URL =
       "https://script.google.com/macros/s/AKfycbzc1h3USKNaFo_4TecPvlpvO9Qi-JQRBvs92CwEyeNhsDaryz5gvzlISn1tv2eTsxzS/exec";
+
+
+    const SECURITY_STORAGE_KEY =
+      "khoAnhLauncherCredentialV1";
+
+
+    function looksLikeDeviceCredential(
+      credential
+    ) {
+
+      return /^v1\.[a-f0-9]{32}\.[A-Za-z0-9_-]{40,128}$/
+        .test(
+          String(
+            credential || ""
+          )
+        );
+    }
+
+
+    function getStoredLauncherCredential() {
+
+      try {
+
+        const value =
+          localStorage.getItem(
+            SECURITY_STORAGE_KEY
+          ) || "";
+
+
+        return looksLikeDeviceCredential(
+          value
+        )
+          ? value
+          : "";
+
+      } catch (error) {
+
+        return "";
+      }
+    }
+
+
+    function saveLauncherCredential(
+      credential
+    ) {
+
+      if (
+        !looksLikeDeviceCredential(
+          credential
+        )
+      ) {
+
+        return false;
+      }
+
+
+      try {
+
+        localStorage.setItem(
+          SECURITY_STORAGE_KEY,
+          credential
+        );
+
+        return true;
+
+      } catch (error) {
+
+        return false;
+      }
+    }
+
+
+    function buildAppsScriptUrl(
+      credential
+    ) {
+
+      if (
+        !looksLikeDeviceCredential(
+          credential
+        )
+      ) {
+
+        return APP_URL;
+      }
+
+
+      return (
+        APP_URL +
+        "#deviceCredential=" +
+        encodeURIComponent(
+          credential
+        )
+      );
+    }
+
+
+    function consumeCredentialBridge() {
+
+      const rawHash =
+        String(
+          window.location.hash || ""
+        ).replace(
+          /^#/,
+          ""
+        );
+
+
+      if (!rawHash) {
+
+        return false;
+      }
+
+
+      const params =
+        new URLSearchParams(
+          rawHash
+        );
+
+
+      const incomingCredential =
+        params.get(
+          "saveDeviceCredential"
+        ) || "";
+
+
+      const continueTarget =
+        params.get(
+          "continue"
+        ) || "";
+
+
+      if (
+        !looksLikeDeviceCredential(
+          incomingCredential
+        )
+      ) {
+
+        return false;
+      }
+
+
+      const saved =
+        saveLauncherCredential(
+          incomingCredential
+        );
+
+
+      /*
+        Remove the secret fragment from GitHub history immediately.
+      */
+      try {
+
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname +
+          window.location.search
+        );
+
+      } catch (error) {
+
+        // Không ảnh hưởng tới flow chính.
+      }
+
+
+      if (
+        saved &&
+        continueTarget === "upload"
+      ) {
+
+        window.location.replace(
+          buildAppsScriptUrl(
+            incomingCredential
+          )
+        );
+
+        return true;
+      }
+
+
+      return false;
+    }
 
 
     /* =====================================================
@@ -718,9 +907,28 @@
 
       function() {
 
+        /*
+          Enrollment bridge:
+          Apps Script → GitHub saves credential → Apps Script.
+          This only happens after a successful enrollment.
+        */
+        if (
+          consumeCredentialBridge()
+        ) {
+
+          return;
+        }
+
+
         const uploadLink =
           document.getElementById(
             "uploadLink"
+          );
+
+
+        const openAppLink =
+          document.getElementById(
+            "openAppLink"
           );
 
 
@@ -736,8 +944,28 @@
           );
 
 
-        uploadLink.href =
-          APP_URL;
+        const storedCredential =
+          getStoredLauncherCredential();
+
+
+        const appHref =
+          buildAppsScriptUrl(
+            storedCredential
+          );
+
+
+        if (uploadLink) {
+
+          uploadLink.href =
+            appHref;
+        }
+
+
+        if (openAppLink) {
+
+          openAppLink.href =
+            appHref;
+        }
 
 
         /* =================================================
@@ -935,8 +1163,9 @@
 
 
     <a
+      id="openAppLink"
       class="open-button"
-      href="https://script.google.com/macros/s/AKfycbzc1h3USKNaFo_4TecPvlpvO9Qi-JQRBvs92CwEyeNhsDaryz5gvzlISn1tv2eTsxzS/exec"
+      href="#"
     >
       Mở Kho Ảnh 💕
     </a>
