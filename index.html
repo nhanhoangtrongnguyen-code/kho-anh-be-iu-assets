@@ -71,7 +71,6 @@
     href="//script.google.com"
   >
 
-
   <!-- =====================================================
        DETECT MODE EARLY
 
@@ -586,37 +585,6 @@
     }
 
 
-    .gallery-notice {
-
-      display: none;
-
-      margin:
-        2px 0 4px;
-
-      padding:
-        11px 13px;
-
-      border-radius: 14px;
-
-      background:
-        #fff8fa;
-
-      border:
-        1px solid #ffd3dd;
-
-      color:
-        #d87093;
-
-      font-size: 12.5px;
-
-      line-height: 1.5;
-    }
-
-
-    .gallery-notice.show {
-      display: block;
-    }
-
 
     /* =====================================================
        BACK
@@ -787,26 +755,56 @@
 
 
     function buildAppsScriptUrl(
-      credential
+      credential,
+      view,
+      albumKey
     ) {
 
+      const params =
+        new URLSearchParams();
+
+
       if (
-        !looksLikeDeviceCredential(
+        looksLikeDeviceCredential(
           credential
         )
       ) {
 
-        return APP_URL;
+        params.set(
+          "deviceCredential",
+          credential
+        );
       }
 
 
-      return (
-        APP_URL +
-        "#deviceCredential=" +
-        encodeURIComponent(
-          credential
-        )
-      );
+      if (view === "gallery") {
+
+        params.set(
+          "view",
+          "gallery"
+        );
+
+
+        if (
+          albumKey === "baby" ||
+          albumKey === "couple"
+        ) {
+
+          params.set(
+            "album",
+            albumKey
+          );
+        }
+      }
+
+
+      const hash =
+        params.toString();
+
+
+      return hash
+        ? APP_URL + "#" + hash
+        : APP_URL;
     }
 
 
@@ -845,6 +843,12 @@
         ) || "";
 
 
+      const continueAlbum =
+        params.get(
+          "album"
+        ) || "";
+
+
       if (
         !looksLikeDeviceCredential(
           incomingCredential
@@ -879,14 +883,41 @@
       }
 
 
+      if (!saved) {
+
+        return false;
+      }
+
+
       if (
-        saved &&
+        continueTarget === "gallery" &&
+        (
+          continueAlbum === "baby" ||
+          continueAlbum === "couple"
+        )
+      ) {
+
+        window.location.replace(
+          buildAppsScriptUrl(
+            incomingCredential,
+            "gallery",
+            continueAlbum
+          )
+        );
+
+        return true;
+      }
+
+
+      if (
         continueTarget === "upload"
       ) {
 
         window.location.replace(
           buildAppsScriptUrl(
-            incomingCredential
+            incomingCredential,
+            "upload",
+            ""
           )
         );
 
@@ -948,23 +979,59 @@
           getStoredLauncherCredential();
 
 
-        const appHref =
+        const uploadHref =
           buildAppsScriptUrl(
-            storedCredential
+            storedCredential,
+            "upload",
+            ""
           );
 
 
         if (uploadLink) {
 
           uploadLink.href =
-            appHref;
+            uploadHref;
         }
 
 
         if (openAppLink) {
 
           openAppLink.href =
-            appHref;
+            uploadHref;
+        }
+
+
+        const galleryBabyLink =
+          document.getElementById(
+            "galleryBabyLink"
+          );
+
+
+        const galleryCoupleLink =
+          document.getElementById(
+            "galleryCoupleLink"
+          );
+
+
+        if (galleryBabyLink) {
+
+          galleryBabyLink.href =
+            buildAppsScriptUrl(
+              storedCredential,
+              "gallery",
+              "baby"
+            );
+        }
+
+
+        if (galleryCoupleLink) {
+
+          galleryCoupleLink.href =
+            buildAppsScriptUrl(
+              storedCredential,
+              "gallery",
+              "couple"
+            );
         }
 
 
@@ -1048,30 +1115,6 @@
 
 
     /* =====================================================
-       GALLERY PLACEHOLDER
-
-       Không chứa Drive URL.
-       Gallery an toàn sẽ được nối vào ở bước sau.
-    ====================================================== */
-
-    function showGalleryComingSoon() {
-
-      const notice =
-        document.getElementById(
-          "galleryNotice"
-        );
-
-
-      if (notice) {
-
-        notice.classList.add(
-          "show"
-        );
-      }
-    }
-
-
-    /* =====================================================
        BACK TO MAIN MENU
     ====================================================== */
 
@@ -1089,23 +1132,9 @@
         );
 
 
-      const galleryNotice =
-        document.getElementById(
-          "galleryNotice"
-        );
-
-
       albumMenu.classList.remove(
         "show"
       );
-
-
-      if (galleryNotice) {
-
-        galleryNotice.classList.remove(
-          "show"
-        );
-      }
 
 
       mainMenu.classList.add(
@@ -1299,10 +1328,10 @@
 
       <!-- BABY -->
 
-      <button
-        type="button"
+      <a
+        id="galleryBabyLink"
         class="app-button baby-button"
-        onclick="showGalleryComingSoon()"
+        href="#"
       >
 
         <span class="button-icon">
@@ -1323,15 +1352,15 @@
 
         </span>
 
-      </button>
+      </a>
 
 
       <!-- COUPLE -->
 
-      <button
-        type="button"
+      <a
+        id="galleryCoupleLink"
         class="app-button couple-button"
-        onclick="showGalleryComingSoon()"
+        href="#"
       >
 
         <span class="button-icon">
@@ -1352,16 +1381,7 @@
 
         </span>
 
-      </button>
-
-
-      <div
-        id="galleryNotice"
-        class="gallery-notice"
-      >
-        💕 Phần xem ảnh đang được anh nâng cấp nèeee.
-        Mình sẽ nối Gallery an toàn vào đây ở bước sau nhaaa 💗
-      </div>
+      </a>
 
 
       <!-- BACK -->
