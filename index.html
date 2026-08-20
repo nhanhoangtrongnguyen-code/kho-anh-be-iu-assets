@@ -22,13 +22,13 @@
 
   <link
     rel="apple-touch-icon"
-    href="./icon1.png"
+    href="./icon1.jpeg"
   >
 
   <link
     rel="icon"
-    type="image/png"
-    href="./icon1.png"
+    type="image/jpeg"
+    href="./icon1.jpeg"
   >
 
 
@@ -80,6 +80,75 @@
     rel="dns-prefetch"
     href="//drive.google.com"
   >
+
+
+  <!-- =====================================================
+       DETECT MODE EARLY
+
+       iPhone Home Screen
+       → app-mode
+
+       iPhone/iPad browser bình thường
+       → ios-browser
+
+       PC / Mac browser bình thường
+       → desktop-mode
+  ====================================================== -->
+
+  <script>
+
+    const isIOSStandalone =
+      window.navigator.standalone === true;
+
+
+    const isStandaloneDisplay =
+      window.matchMedia &&
+      window.matchMedia(
+        "(display-mode: standalone)"
+      ).matches;
+
+
+    const isIOSDevice =
+      /iPhone|iPad|iPod/i.test(
+        navigator.userAgent
+      ) ||
+      (
+        navigator.platform === "MacIntel" &&
+        navigator.maxTouchPoints > 1
+      );
+
+
+    const isAppLaunch =
+      isIOSStandalone ||
+      isStandaloneDisplay;
+
+
+    if (isAppLaunch) {
+
+      document.documentElement
+        .classList
+        .add(
+          "app-mode"
+        );
+
+    } else if (isIOSDevice) {
+
+      document.documentElement
+        .classList
+        .add(
+          "ios-browser"
+        );
+
+    } else {
+
+      document.documentElement
+        .classList
+        .add(
+          "desktop-mode"
+        );
+    }
+
+  </script>
 
 
   <style>
@@ -170,6 +239,8 @@
         0 auto 16px;
 
       border-radius: 22px;
+
+      object-fit: cover;
     }
 
 
@@ -201,10 +272,18 @@
 
     /* =====================================================
        INSTALL SCREEN
-       Khi mở bằng Safari bình thường
+
+       Mặc định ẩn.
+       Chỉ hiện khi đang mở bằng browser iPhone/iPad
+       chứ KHÔNG phải Home Screen.
     ====================================================== */
 
     .install-screen {
+      display: none;
+    }
+
+
+    html.ios-browser .install-screen {
       display: block;
     }
 
@@ -229,7 +308,14 @@
 
 
     /* =====================================================
-       HOME SCREEN APP
+       APP SCREEN
+
+       Hiện trên:
+       - Home Screen
+       - PC / Mac
+
+       Ẩn trong Safari iPhone bình thường
+       để giữ màn hướng dẫn Add to Home Screen.
     ====================================================== */
 
     .app-screen {
@@ -237,23 +323,27 @@
     }
 
 
-    html.app-mode .install-screen {
-      display: none;
+    html.app-mode .app-screen,
+    html.desktop-mode .app-screen {
+      display: block;
     }
 
 
-    html.app-mode .app-screen {
-      display: block;
+    html.app-mode .install-screen,
+    html.desktop-mode .install-screen {
+      display: none;
     }
 
 
     /* =====================================================
        450 MS INTRO
+
+       Chỉ Home Screen mới dùng.
     ====================================================== */
 
     .launch-message {
 
-      display: block;
+      display: none;
 
       margin-top: 8px;
 
@@ -268,6 +358,11 @@
 
       transition:
         opacity 0.2s ease;
+    }
+
+
+    html.app-mode .launch-message {
+      display: block;
     }
 
 
@@ -433,7 +528,7 @@
 
 
     /* =====================================================
-       UPLOAD BUTTON
+       UPLOAD
     ====================================================== */
 
     .upload-button {
@@ -459,23 +554,10 @@
 
 
     /* =====================================================
-       VIEW BUTTONS
+       VIEW
     ====================================================== */
 
     .view-button {
-
-      color:
-        #ff3366;
-
-      background:
-        #fff0f3;
-
-      border:
-        1px solid #ffc2d0;
-    }
-
-
-    .couple-button {
 
       color:
         #ff3366;
@@ -501,8 +583,21 @@
     }
 
 
+    .couple-button {
+
+      color:
+        #ff3366;
+
+      background:
+        #fff0f3;
+
+      border:
+        1px solid #ffc2d0;
+    }
+
+
     /* =====================================================
-       BACK BUTTON
+       BACK
     ====================================================== */
 
     .back-button {
@@ -539,7 +634,7 @@
 
 
     /* =====================================================
-       SAFARI BUTTON
+       SAFARI OPEN BUTTON
     ====================================================== */
 
     .open-button {
@@ -583,16 +678,11 @@
   </style>
 
 
-  <!-- =====================================================
-       APP MODE DETECTION
-
-       Home Screen:
-       → intro
-       → 450 ms
-       → main menu
-  ====================================================== -->
-
   <script>
+
+    /* =====================================================
+       URLS
+    ====================================================== */
 
     const APP_URL =
       "https://script.google.com/macros/s/AKfycbzc1h3USKNaFo_4TecPvlpvO9Qi-JQRBvs92CwEyeNhsDaryz5gvzlISn1tv2eTsxzS/exec";
@@ -606,78 +696,67 @@
       "https://drive.google.com/drive/folders/1q6KOPDlRL1hs-JnH6acFXsPDRLASnHoV";
 
 
-    const isIOSStandalone =
-      window.navigator.standalone === true;
+    /* =====================================================
+       INITIALIZE
+    ====================================================== */
+
+    window.addEventListener(
+      "DOMContentLoaded",
+
+      function() {
+
+        const uploadLink =
+          document.getElementById(
+            "uploadLink"
+          );
 
 
-    const isStandaloneDisplay =
-      window.matchMedia &&
-      window.matchMedia(
-        "(display-mode: standalone)"
-      ).matches;
+        const babyDriveLink =
+          document.getElementById(
+            "babyDriveLink"
+          );
 
 
-    const isAppLaunch =
-      isIOSStandalone ||
-      isStandaloneDisplay;
+        const coupleDriveLink =
+          document.getElementById(
+            "coupleDriveLink"
+          );
 
 
-    if (isAppLaunch) {
-
-      document.documentElement
-        .classList
-        .add(
-          "app-mode"
-        );
+        const mainMenu =
+          document.getElementById(
+            "mainMenu"
+          );
 
 
-      window.addEventListener(
-        "DOMContentLoaded",
-
-        function() {
-
-          document
-            .getElementById(
-              "uploadLink"
-            )
-            .href =
-              APP_URL;
+        const launchMessage =
+          document.getElementById(
+            "launchMessage"
+          );
 
 
-          document
-            .getElementById(
-              "babyDriveLink"
-            )
-            .href =
-              BABY_DRIVE_URL;
+        uploadLink.href =
+          APP_URL;
 
 
-          document
-            .getElementById(
-              "coupleDriveLink"
-            )
-            .href =
-              COUPLE_DRIVE_URL;
+        babyDriveLink.href =
+          BABY_DRIVE_URL;
 
 
-          /*
-            Intro 450 ms.
-          */
+        coupleDriveLink.href =
+          COUPLE_DRIVE_URL;
+
+
+        /* =================================================
+           HOME SCREEN
+
+           Intro 450 ms rồi mới hiện menu.
+        ================================================= */
+
+        if (isAppLaunch) {
 
           setTimeout(
             function() {
-
-              const launchMessage =
-                document.getElementById(
-                  "launchMessage"
-                );
-
-
-              const mainMenu =
-                document.getElementById(
-                  "mainMenu"
-                );
-
 
               launchMessage.style.display =
                 "none";
@@ -692,9 +771,30 @@
             450
           );
 
+          return;
         }
-      );
-    }
+
+
+        /* =================================================
+           DESKTOP
+
+           Không cần intro.
+           Hiện menu ngay.
+        ================================================= */
+
+        if (!isIOSDevice) {
+
+          launchMessage.style.display =
+            "none";
+
+
+          mainMenu.classList.add(
+            "show"
+          );
+        }
+
+      }
+    );
 
 
     /* =====================================================
@@ -763,14 +863,13 @@
 
 
   <!-- =====================================================
-       SAFARI NORMAL
-       Chỉ để Add to Home Screen.
+       IPHONE / IPAD SAFARI NORMAL
   ====================================================== -->
 
   <div class="card install-screen">
 
     <img
-      src="./icon1.png"
+      src="./icon1.jpeg"
       class="icon"
       alt="Kho Ảnh Bé Iu"
     >
@@ -815,13 +914,13 @@
 
 
   <!-- =====================================================
-       HOME SCREEN APP
+       APP / DESKTOP
   ====================================================== -->
 
   <div class="card app-screen">
 
     <img
-      src="./icon1.png"
+      src="./icon1.jpeg"
       class="icon"
       alt="Kho Ảnh Bé Iu"
     >
@@ -833,7 +932,7 @@
 
 
     <!-- ===================================================
-         450 MS INTRO
+         HOME SCREEN INTRO
     ==================================================== -->
 
     <div
@@ -938,7 +1037,7 @@
       </div>
 
 
-      <!-- BABY ALBUM -->
+      <!-- BABY -->
 
       <a
         id="babyDriveLink"
@@ -969,7 +1068,7 @@
       </a>
 
 
-      <!-- COUPLE ALBUM -->
+      <!-- COUPLE -->
 
       <a
         id="coupleDriveLink"
