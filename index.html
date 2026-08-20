@@ -17,7 +17,7 @@
 
 
   <!-- =====================================================
-       ICON HOME SCREEN
+       HOME SCREEN ICON
   ====================================================== -->
 
   <link
@@ -33,7 +33,7 @@
 
 
   <!-- =====================================================
-       IOS HOME SCREEN APP MODE
+       IOS HOME SCREEN
   ====================================================== -->
 
   <meta
@@ -58,10 +58,9 @@
 
 
   <!-- =====================================================
-       PREPARE GOOGLE CONNECTION
+       PRECONNECT
 
-       Vẫn chuẩn bị kết nối sớm,
-       nhưng cố ý giữ màn hình launcher 450 ms.
+       Chuẩn bị kết nối trước tới Google.
   ====================================================== -->
 
   <link
@@ -76,65 +75,13 @@
 
   <link
     rel="preconnect"
-    href="https://script.googleusercontent.com"
+    href="https://drive.google.com"
   >
 
-
-  <!-- =====================================================
-       HOME SCREEN DETECTION + 450 MS DELAY
-  ====================================================== -->
-
-  <script>
-
-    const APP_URL =
-      "https://script.google.com/macros/s/AKfycbzc1h3USKNaFo_4TecPvlpvO9Qi-JQRBvs92CwEyeNhsDaryz5gvzlISn1tv2eTsxzS/exec";
-
-
-    const isIOSStandalone =
-      window.navigator.standalone === true;
-
-
-    const isStandaloneDisplay =
-      window.matchMedia &&
-      window.matchMedia(
-        "(display-mode: standalone)"
-      ).matches;
-
-
-    const isAppLaunch =
-      isIOSStandalone ||
-      isStandaloneDisplay;
-
-
-    /*
-      Nếu mở từ icon Home Screen:
-
-      → hiện màn hình chờ xinh xinh
-      → giữ 450 ms
-      → chuyển sang Apps Script
-    */
-
-    if (isAppLaunch) {
-
-      document.documentElement.classList.add(
-        "app-launch"
-      );
-
-
-      setTimeout(
-        function() {
-
-          window.location.replace(
-            APP_URL
-          );
-
-        },
-
-        450
-      );
-    }
-
-  </script>
+  <link
+    rel="dns-prefetch"
+    href="//drive.google.com"
+  >
 
 
   <style>
@@ -164,10 +111,10 @@
 
 
     body {
+
       min-height: 100vh;
 
       display: flex;
-
       align-items: center;
       justify-content: center;
 
@@ -184,6 +131,7 @@
 
 
     .card {
+
       width: 100%;
       max-width: 420px;
 
@@ -214,6 +162,7 @@
 
 
     .icon {
+
       display: block;
 
       width: 88px;
@@ -227,8 +176,9 @@
 
 
     h1 {
+
       margin:
-        0 0 12px;
+        0 0 10px;
 
       color:
         #ff4d79;
@@ -240,10 +190,10 @@
 
 
     p {
+
       margin: 0;
 
-      color:
-        #666;
+      color: #666;
 
       font-size: 14px;
 
@@ -251,7 +201,18 @@
     }
 
 
+    /* =====================================================
+       INSTALL SCREEN
+       Khi mở bằng Safari bình thường
+    ====================================================== */
+
+    .install-screen {
+      display: block;
+    }
+
+
     .hint {
+
       margin-top: 16px;
 
       padding:
@@ -259,11 +220,9 @@
 
       border-radius: 14px;
 
-      background:
-        #fff0f3;
+      background: #fff0f3;
 
-      color:
-        #d87093;
+      color: #d87093;
 
       font-size: 13px;
 
@@ -271,7 +230,253 @@
     }
 
 
+    /* =====================================================
+       HOME SCREEN APP
+    ====================================================== */
+
+    .app-screen {
+      display: none;
+    }
+
+
+    html.app-mode .install-screen {
+      display: none;
+    }
+
+
+    html.app-mode .app-screen {
+      display: block;
+    }
+
+
+    /* =====================================================
+       450 MS INTRO
+    ====================================================== */
+
+    .launch-message {
+
+      display: block;
+
+      margin-top: 8px;
+
+      color:
+        #d87093;
+
+      font-size: 15px;
+
+      font-weight: 650;
+
+      line-height: 1.6;
+
+      transition:
+        opacity 0.2s ease;
+    }
+
+
+    .tiny-heart {
+
+      margin-top: 7px;
+
+      font-size: 23px;
+    }
+
+
+    /* =====================================================
+       MENU
+    ====================================================== */
+
+    .menu {
+
+      display: none;
+
+      margin-top: 20px;
+
+      gap: 12px;
+
+      opacity: 0;
+
+      transform:
+        translateY(5px);
+
+      transition:
+        opacity 0.22s ease,
+        transform 0.22s ease;
+    }
+
+
+    .menu.show {
+
+      display: grid;
+
+      opacity: 1;
+
+      transform:
+        translateY(0);
+    }
+
+
+    .menu-title {
+
+      margin-bottom: 2px;
+
+      color:
+        #d87093;
+
+      font-size: 14px;
+
+      line-height: 1.5;
+    }
+
+
+    .app-button {
+
+      display: flex;
+
+      align-items: center;
+
+      width: 100%;
+
+      min-height: 62px;
+
+      padding:
+        12px 16px;
+
+      border: none;
+
+      border-radius: 20px;
+
+      text-decoration: none;
+
+      text-align: left;
+
+      cursor: pointer;
+
+      transition:
+        transform 0.12s ease,
+        opacity 0.12s ease;
+    }
+
+
+    .app-button:active {
+
+      transform:
+        scale(0.98);
+
+      opacity:
+        0.88;
+    }
+
+
+    .button-icon {
+
+      display: flex;
+
+      align-items: center;
+      justify-content: center;
+
+      flex: 0 0 42px;
+
+      height: 42px;
+
+      margin-right: 12px;
+
+      border-radius: 14px;
+
+      font-size: 23px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.52
+        );
+    }
+
+
+    .button-text {
+
+      display: block;
+
+      flex: 1;
+    }
+
+
+    .button-title {
+
+      display: block;
+
+      font-size: 15px;
+
+      font-weight: 750;
+
+      line-height: 1.35;
+    }
+
+
+    .button-subtitle {
+
+      display: block;
+
+      margin-top: 2px;
+
+      font-size: 11.5px;
+
+      line-height: 1.4;
+
+      opacity: 0.78;
+    }
+
+
+    /* =====================================================
+       UPLOAD BUTTON
+    ====================================================== */
+
+    .upload-button {
+
+      color: white;
+
+      background:
+        linear-gradient(
+          135deg,
+          #ff4d79,
+          #ff1a53
+        );
+
+      box-shadow:
+        0 6px 15px
+        rgba(
+          255,
+          77,
+          121,
+          0.25
+        );
+    }
+
+
+    /* =====================================================
+       VIEW DRIVE BUTTON
+    ====================================================== */
+
+    .view-button {
+
+      color:
+        #ff3366;
+
+      background:
+        #fff0f3;
+
+      border:
+        1px solid #ffc2d0;
+    }
+
+
+    /* =====================================================
+       SAFARI BUTTON
+    ====================================================== */
+
     .open-button {
+
       display: inline-block;
 
       width: 100%;
@@ -293,6 +498,7 @@
       color: white;
 
       font-size: 15px;
+
       font-weight: 700;
 
       text-decoration: none;
@@ -307,60 +513,118 @@
         );
     }
 
-
-    /* =====================================================
-       NORMAL SAFARI SCREEN
-
-       Dùng để Add to Home Screen.
-    ====================================================== */
-
-    .install-screen {
-      display: block;
-    }
-
-
-    /* =====================================================
-       HOME SCREEN LAUNCH SCREEN
-
-       Chỉ hiện trong 450 ms trước redirect.
-    ====================================================== */
-
-    .launch-screen {
-      display: none;
-    }
-
-
-    html.app-launch .install-screen {
-      display: none;
-    }
-
-
-    html.app-launch .launch-screen {
-      display: block;
-    }
-
-
-    .launch-text {
-      margin-top: 5px;
-
-      color:
-        #d87093;
-
-      font-size: 15px;
-
-      font-weight: 650;
-
-      line-height: 1.6;
-    }
-
-
-    .tiny-heart {
-      margin-top: 8px;
-
-      font-size: 22px;
-    }
-
   </style>
+
+
+  <!-- =====================================================
+       APP MODE DETECTION
+
+       Home Screen:
+       → hiện intro
+       → 450 ms
+       → hiện menu
+
+       KHÔNG auto redirect nữa.
+  ====================================================== -->
+
+  <script>
+
+    const APP_URL =
+      "https://script.google.com/macros/s/AKfycbzc1h3USKNaFo_4TecPvlpvO9Qi-JQRBvs92CwEyeNhsDaryz5gvzlISn1tv2eTsxzS/exec";
+
+
+    const DRIVE_URL =
+      "https://drive.google.com/drive/folders/1K7SkRCILDERg0Zv6sPDBmP6NqlRar4hJ";
+
+
+    const isIOSStandalone =
+      window.navigator.standalone === true;
+
+
+    const isStandaloneDisplay =
+      window.matchMedia &&
+      window.matchMedia(
+        "(display-mode: standalone)"
+      ).matches;
+
+
+    const isAppLaunch =
+      isIOSStandalone ||
+      isStandaloneDisplay;
+
+
+    if (isAppLaunch) {
+
+      document.documentElement
+        .classList
+        .add(
+          "app-mode"
+        );
+
+
+      window.addEventListener(
+        "DOMContentLoaded",
+
+        function() {
+
+          /*
+            Gắn URL ở đây để toàn bộ địa chỉ
+            chỉ cần khai báo một lần phía trên.
+          */
+
+          document
+            .getElementById(
+              "uploadLink"
+            )
+            .href =
+              APP_URL;
+
+
+          document
+            .getElementById(
+              "driveLink"
+            )
+            .href =
+              DRIVE_URL;
+
+
+          /*
+            Giữ intro 450 ms như bản cũ.
+          */
+
+          setTimeout(
+            function() {
+
+              const launchMessage =
+                document.getElementById(
+                  "launchMessage"
+                );
+
+
+              const menu =
+                document.getElementById(
+                  "appMenu"
+                );
+
+
+              launchMessage.style.display =
+                "none";
+
+
+              menu.classList.add(
+                "show"
+              );
+
+            },
+
+            450
+          );
+
+        }
+      );
+    }
+
+  </script>
 
 </head>
 
@@ -371,7 +635,7 @@
   <!-- =====================================================
        SAFARI NORMAL
 
-       Trang này ở lại GitHub để Add to Home Screen.
+       Chỉ để Add to Home Screen.
   ====================================================== -->
 
   <div class="card install-screen">
@@ -422,12 +686,10 @@
 
 
   <!-- =====================================================
-       HOME SCREEN
-
-       Hiện khoảng 450 ms.
+       HOME SCREEN APP
   ====================================================== -->
 
-  <div class="card launch-screen">
+  <div class="card app-screen">
 
     <img
       src="./icon.png"
@@ -441,13 +703,93 @@
     </h1>
 
 
-    <div class="launch-text">
+    <!-- 450 ms đầu -->
+
+    <div
+      id="launchMessage"
+      class="launch-message"
+    >
+
       Anh đang mở kho ảnh cho bé nèeee 💕
+
+      <div class="tiny-heart">
+        💗
+      </div>
+
     </div>
 
 
-    <div class="tiny-heart">
-      💗
+    <!-- Sau 450 ms -->
+
+    <div
+      id="appMenu"
+      class="menu"
+    >
+
+      <div class="menu-title">
+        Bé muốn làm gì nèeee? 💕
+      </div>
+
+
+      <!-- UPLOAD -->
+
+      <a
+        id="uploadLink"
+        class="app-button upload-button"
+        href="#"
+      >
+
+        <span class="button-icon">
+          📸
+        </span>
+
+
+        <span class="button-text">
+
+          <span class="button-title">
+            Gửi ảnh cho anh
+          </span>
+
+
+          <span class="button-subtitle">
+            Cất thêm kỷ niệm của tụi mình nèeee
+          </span>
+
+        </span>
+
+      </a>
+
+
+      <!-- VIEW DRIVE -->
+
+      <a
+        id="driveLink"
+        class="app-button view-button"
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+
+        <span class="button-icon">
+          🖼️
+        </span>
+
+
+        <span class="button-text">
+
+          <span class="button-title">
+            Xem ảnh của tụi mình
+          </span>
+
+
+          <span class="button-subtitle">
+            Mở kho ảnh anh đã cất cho bé 💕
+          </span>
+
+        </span>
+
+      </a>
+
     </div>
 
   </div>
