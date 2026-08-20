@@ -59,8 +59,6 @@
 
   <!-- =====================================================
        PRECONNECT
-
-       Chuẩn bị kết nối trước tới Google.
   ====================================================== -->
 
   <link
@@ -282,7 +280,7 @@
 
 
     /* =====================================================
-       MENU
+       MENUS
     ====================================================== */
 
     .menu {
@@ -328,6 +326,10 @@
     }
 
 
+    /* =====================================================
+       BUTTONS
+    ====================================================== */
+
     .app-button {
 
       display: flex;
@@ -350,6 +352,8 @@
       text-align: left;
 
       cursor: pointer;
+
+      font-family: inherit;
 
       transition:
         transform 0.12s ease,
@@ -455,7 +459,7 @@
 
 
     /* =====================================================
-       VIEW DRIVE BUTTON
+       VIEW BUTTONS
     ====================================================== */
 
     .view-button {
@@ -468,6 +472,69 @@
 
       border:
         1px solid #ffc2d0;
+    }
+
+
+    .couple-button {
+
+      color:
+        #ff3366;
+
+      background:
+        #fff0f3;
+
+      border:
+        1px solid #ffc2d0;
+    }
+
+
+    .baby-button {
+
+      color:
+        #ff3366;
+
+      background:
+        #fff8fa;
+
+      border:
+        1px solid #ffd3dd;
+    }
+
+
+    /* =====================================================
+       BACK BUTTON
+    ====================================================== */
+
+    .back-button {
+
+      display: block;
+
+      width: 100%;
+
+      padding:
+        11px 14px;
+
+      border:
+        none;
+
+      border-radius: 16px;
+
+      background:
+        transparent;
+
+      color:
+        #d87093;
+
+      font-size: 13px;
+
+      font-weight: 650;
+
+      cursor: pointer;
+    }
+
+
+    .back-button:active {
+      opacity: 0.65;
     }
 
 
@@ -520,11 +587,9 @@
        APP MODE DETECTION
 
        Home Screen:
-       → hiện intro
+       → intro
        → 450 ms
-       → hiện menu
-
-       KHÔNG auto redirect nữa.
+       → main menu
   ====================================================== -->
 
   <script>
@@ -533,8 +598,12 @@
       "https://script.google.com/macros/s/AKfycbzc1h3USKNaFo_4TecPvlpvO9Qi-JQRBvs92CwEyeNhsDaryz5gvzlISn1tv2eTsxzS/exec";
 
 
-    const DRIVE_URL =
+    const BABY_DRIVE_URL =
       "https://drive.google.com/drive/folders/1K7SkRCILDERg0Zv6sPDBmP6NqlRar4hJ";
+
+
+    const COUPLE_DRIVE_URL =
+      "https://drive.google.com/drive/folders/1q6KOPDlRL1hs-JnH6acFXsPDRLASnHoV";
 
 
     const isIOSStandalone =
@@ -567,11 +636,6 @@
 
         function() {
 
-          /*
-            Gắn URL ở đây để toàn bộ địa chỉ
-            chỉ cần khai báo một lần phía trên.
-          */
-
           document
             .getElementById(
               "uploadLink"
@@ -582,14 +646,22 @@
 
           document
             .getElementById(
-              "driveLink"
+              "babyDriveLink"
             )
             .href =
-              DRIVE_URL;
+              BABY_DRIVE_URL;
+
+
+          document
+            .getElementById(
+              "coupleDriveLink"
+            )
+            .href =
+              COUPLE_DRIVE_URL;
 
 
           /*
-            Giữ intro 450 ms như bản cũ.
+            Intro 450 ms.
           */
 
           setTimeout(
@@ -601,9 +673,9 @@
                 );
 
 
-              const menu =
+              const mainMenu =
                 document.getElementById(
-                  "appMenu"
+                  "mainMenu"
                 );
 
 
@@ -611,7 +683,7 @@
                 "none";
 
 
-              menu.classList.add(
+              mainMenu.classList.add(
                 "show"
               );
 
@@ -621,6 +693,64 @@
           );
 
         }
+      );
+    }
+
+
+    /* =====================================================
+       OPEN ALBUM MENU
+    ====================================================== */
+
+    function openAlbumMenu() {
+
+      const mainMenu =
+        document.getElementById(
+          "mainMenu"
+        );
+
+
+      const albumMenu =
+        document.getElementById(
+          "albumMenu"
+        );
+
+
+      mainMenu.classList.remove(
+        "show"
+      );
+
+
+      albumMenu.classList.add(
+        "show"
+      );
+    }
+
+
+    /* =====================================================
+       BACK TO MAIN MENU
+    ====================================================== */
+
+    function backToMainMenu() {
+
+      const mainMenu =
+        document.getElementById(
+          "mainMenu"
+        );
+
+
+      const albumMenu =
+        document.getElementById(
+          "albumMenu"
+        );
+
+
+      albumMenu.classList.remove(
+        "show"
+      );
+
+
+      mainMenu.classList.add(
+        "show"
       );
     }
 
@@ -634,7 +764,6 @@
 
   <!-- =====================================================
        SAFARI NORMAL
-
        Chỉ để Add to Home Screen.
   ====================================================== -->
 
@@ -703,7 +832,9 @@
     </h1>
 
 
-    <!-- 450 ms đầu -->
+    <!-- ===================================================
+         450 MS INTRO
+    ==================================================== -->
 
     <div
       id="launchMessage"
@@ -719,10 +850,12 @@
     </div>
 
 
-    <!-- Sau 450 ms -->
+    <!-- ===================================================
+         MAIN MENU
+    ==================================================== -->
 
     <div
-      id="appMenu"
+      id="mainMenu"
       class="menu"
     >
 
@@ -752,7 +885,7 @@
 
 
           <span class="button-subtitle">
-            Cất thêm kỷ niệm của tụi mình nèeee
+            Cất thêm mấy kỷ niệm xinh xinh nèeee
           </span>
 
         </span>
@@ -760,14 +893,12 @@
       </a>
 
 
-      <!-- VIEW DRIVE -->
+      <!-- VIEW -->
 
-      <a
-        id="driveLink"
+      <button
+        type="button"
         class="app-button view-button"
-        href="#"
-        target="_blank"
-        rel="noopener noreferrer"
+        onclick="openAlbumMenu()"
       >
 
         <span class="button-icon">
@@ -778,17 +909,106 @@
         <span class="button-text">
 
           <span class="button-title">
-            Xem ảnh của tụi mình
+            Xem ảnh
           </span>
 
 
           <span class="button-subtitle">
-            Mở kho ảnh anh đã cất cho bé 💕
+            Bé muốn xem kho nào thì chọn nèeee 💕
+          </span>
+
+        </span>
+
+      </button>
+
+    </div>
+
+
+    <!-- ===================================================
+         ALBUM MENU
+    ==================================================== -->
+
+    <div
+      id="albumMenu"
+      class="menu"
+    >
+
+      <div class="menu-title">
+        Bé muốn xem album nào nèeee? 💕
+      </div>
+
+
+      <!-- BABY ALBUM -->
+
+      <a
+        id="babyDriveLink"
+        class="app-button baby-button"
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+
+        <span class="button-icon">
+          🌸
+        </span>
+
+
+        <span class="button-text">
+
+          <span class="button-title">
+            Ảnh xinh của bé
+          </span>
+
+
+          <span class="button-subtitle">
+            Kho ảnh riêng anh cất cho bé nèeee
           </span>
 
         </span>
 
       </a>
+
+
+      <!-- COUPLE ALBUM -->
+
+      <a
+        id="coupleDriveLink"
+        class="app-button couple-button"
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+
+        <span class="button-icon">
+          💕
+        </span>
+
+
+        <span class="button-text">
+
+          <span class="button-title">
+            Ảnh của tụi mình
+          </span>
+
+
+          <span class="button-subtitle">
+            Mấy kỷ niệm có hai đứa mình ở đây nèee
+          </span>
+
+        </span>
+
+      </a>
+
+
+      <!-- BACK -->
+
+      <button
+        type="button"
+        class="back-button"
+        onclick="backToMainMenu()"
+      >
+        ← Quay lại nèeee
+      </button>
 
     </div>
 
