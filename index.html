@@ -2,7 +2,6 @@
 <html lang="vi">
 
 <head>
-
   <meta charset="UTF-8">
 
   <meta
@@ -12,27 +11,36 @@
 
   <title>Kho Ảnh Xinh Của Em Bé Iu 📸💕</title>
 
-  <!-- Icon ngoài màn hình iPhone -->
+
+  <!-- =====================================================
+       ICON
+
+       Đây là icon iPhone sẽ dùng khi Add to Home Screen.
+  ====================================================== -->
+
   <link
     rel="apple-touch-icon"
-    href="./icon.png"
+    href="icon.png"
   >
 
-  <!-- Favicon -->
   <link
     rel="icon"
     type="image/png"
-    href="./icon.png"
+    href="icon.png"
   >
 
-  <!-- Manifest -->
-  <link
-    rel="manifest"
-    href="./manifest.webmanifest"
-  >
+
+  <!-- =====================================================
+       HOME SCREEN APP MODE
+  ====================================================== -->
 
   <meta
     name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+
+  <meta
+    name="mobile-web-app-capable"
     content="yes"
   >
 
@@ -46,10 +54,59 @@
     content="default"
   >
 
-  <meta
-    name="theme-color"
-    content="#ffe6ea"
-  >
+
+  <!-- =====================================================
+       REDIRECT
+
+       QUAN TRỌNG:
+
+       - Safari bình thường:
+         KHÔNG redirect
+         để mình Add to Home Screen với icon hồng.
+
+       - Khi mở từ Home Screen:
+         redirect NGAY sang Apps Script.
+         Không setTimeout.
+         Không delay 450 ms.
+  ====================================================== -->
+
+  <script>
+
+    const APP_URL =
+      "https://script.google.com/macros/s/AKfycbzc1h3USKNaFo_4TecPvlpvO9Qi-JQRBvs92CwEyeNhsDaryz5gvzlISn1tv2eTsxzS/exec";
+
+
+    const isIOSStandalone =
+      window.navigator.standalone === true;
+
+
+    const isStandaloneDisplay =
+      window.matchMedia &&
+      window.matchMedia(
+        "(display-mode: standalone)"
+      ).matches;
+
+
+    if (
+      isIOSStandalone ||
+      isStandaloneDisplay
+    ) {
+
+      /*
+        Redirect ngay lập tức.
+
+        KHÔNG:
+        - setTimeout
+        - màn hình chờ
+        - delay 450 ms
+      */
+
+      window.location.replace(
+        APP_URL
+      );
+    }
+
+  </script>
 
 
   <style>
@@ -66,25 +123,27 @@
         Arial,
         sans-serif;
 
-      -webkit-tap-highlight-color: transparent;
+      -webkit-tap-highlight-color:
+        transparent;
+    }
+
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
     }
 
 
     body {
-
-      margin: 0;
-
       min-height: 100vh;
 
-      padding:
-        max(24px, env(safe-area-inset-top))
-        18px
-        max(30px, env(safe-area-inset-bottom));
-
       display: flex;
-
       align-items: center;
       justify-content: center;
+
+      padding:
+        24px 18px;
 
       background:
         linear-gradient(
@@ -92,17 +151,12 @@
           #ffe6ea 0%,
           #ffe4e1 100%
         );
-
-      text-align: center;
     }
 
 
     .card {
-
       width: 100%;
-      max-width: 400px;
-
-      padding: 30px 22px;
+      max-width: 420px;
 
       background:
         rgba(
@@ -112,7 +166,12 @@
           0.96
         );
 
+      padding:
+        28px 22px;
+
       border-radius: 26px;
+
+      text-align: center;
 
       box-shadow:
         0 12px 30px
@@ -126,80 +185,90 @@
 
 
     .icon {
+      width: 88px;
+      height: 88px;
 
-      width: 115px;
-      height: 115px;
+      border-radius: 22px;
 
       display: block;
 
       margin:
-        0 auto
-        16px;
-
-      object-fit: cover;
-
-      border-radius: 25px;
-
-      box-shadow:
-        0 8px 20px
-        rgba(
-          255,
-          77,
-          121,
-          0.18
-        );
+        0 auto 16px;
     }
 
 
     h1 {
-
       margin:
-        0
-        0
-        12px;
+        0 0 12px;
 
-      color: #ff4d79;
+      color:
+        #ff4d79;
 
-      font-size: 22px;
-      line-height: 1.3;
+      font-size:
+        21px;
+
+      line-height:
+        1.3;
     }
 
 
-    .message {
-
+    p {
       margin:
-        0
-        0
-        20px;
+        0;
 
-      padding: 13px;
+      color:
+        #666;
 
-      color: #666;
+      font-size:
+        14px;
 
-      background: #fff5f7;
+      line-height:
+        1.6;
+    }
 
-      border-radius: 13px;
 
-      border-left:
-        4px solid #ff4d79;
+    .hint {
+      margin-top:
+        16px;
 
-      font-size: 14px;
+      padding:
+        12px 14px;
 
-      line-height: 1.55;
+      background:
+        #fff0f3;
 
-      text-align: left;
+      border-radius:
+        14px;
+
+      color:
+        #d87093;
+
+      font-size:
+        13px;
+
+      line-height:
+        1.55;
     }
 
 
     .open-button {
+      display:
+        inline-block;
 
-      width: 100%;
+      width:
+        100%;
 
-      border: none;
+      margin-top:
+        18px;
 
-      padding: 15px 18px;
+      padding:
+        14px 18px;
 
-      border-radius: 30px;
+      border:
+        none;
+
+      border-radius:
+        28px;
 
       background:
         linear-gradient(
@@ -208,13 +277,20 @@
           #ff1a53
         );
 
-      color: white;
+      color:
+        white;
 
-      font-size: 16px;
+      font-size:
+        15px;
 
-      font-weight: 700;
+      font-weight:
+        700;
 
-      cursor: pointer;
+      text-decoration:
+        none;
+
+      cursor:
+        pointer;
 
       box-shadow:
         0 6px 15px
@@ -224,28 +300,6 @@
           121,
           0.28
         );
-
-      transition:
-        transform 0.15s,
-        opacity 0.15s;
-    }
-
-
-    .open-button:active {
-
-      transform: scale(0.98);
-    }
-
-
-    .small-note {
-
-      margin-top: 15px;
-
-      color: #d87093;
-
-      font-size: 12.5px;
-
-      line-height: 1.5;
     }
 
   </style>
@@ -255,14 +309,20 @@
 
 <body>
 
+  <!--
+    Phần này chỉ hiện khi mở GitHub bằng Safari bình thường.
+
+    Khi chạy từ Home Screen,
+    redirect xảy ra ngay trong <head>
+    nên gần như không nhìn thấy màn hình này.
+  -->
 
   <div class="card">
 
-
     <img
+      src="icon.png"
       class="icon"
-      src="./icon.png"
-      alt="Kho Ảnh Xinh Của Em Bé Iu"
+      alt="Kho Ảnh Bé Iu"
     >
 
 
@@ -271,122 +331,34 @@
     </h1>
 
 
-    <div
-      class="message"
-      id="message"
-    >
+    <p>
+      Bé thêm chỗ này vào màn hình chính nhaaa 💕
+    </p>
 
-      💌 Em bé bấm vô đây là qua kho ảnh của tụi mình nèeee 💕
+
+    <div class="hint">
+
+      Trên iPhone:
+
+      <br>
+
+      <b>Chia sẻ ↑ → Thêm vào Màn hình chính</b>
+
       <br><br>
-      Ảnh xinh xinh xàm xàm gì cũng đem qua cho anh giữ hết nhaaa hihi
+
+      Sau đó bé chỉ cần bấm icon xinh xinh trên màn hình là được nèeee 🌸
 
     </div>
 
 
-    <button
+    <a
       class="open-button"
-      onclick="openPhotoApp()"
+      href="https://script.google.com/macros/s/AKfycbzc1h3USKNaFo_4TecPvlpvO9Qi-JQRBvs92CwEyeNhsDaryz5gvzlISn1tv2eTsxzS/exec"
     >
-
-      Vô kho ảnh với anh nèee 💕
-
-    </button>
-
-
-    <div
-      class="small-note"
-      id="smallNote"
-    >
-
-      Anh mở cửa sẵn cho bé rùiii 📸💗
-
-    </div>
-
+      Mở thử Kho Ảnh 💕
+    </a>
 
   </div>
-
-
-
-  <script>
-
-
-    const APP_URL =
-      "https://script.google.com/macros/s/AKfycbzaE9NzExTaWnapbL98OFYhf29Vz7hNJwc2tXXjFOQT-OQqH8b6BpuR43iG6L30m1DvSA/exec";
-
-
-    function openPhotoApp() {
-
-      document
-        .getElementById("message")
-        .innerHTML =
-          "💕 Qua với anh nèeee,<br>anh đang mở kho ảnh cho bé óooo 💗";
-
-
-      document
-        .getElementById("smallNote")
-        .innerText =
-          "Chờ anh xíu xíuuu nhaaa ✨";
-
-
-      window.location.href =
-        APP_URL;
-    }
-
-
-
-    /*
-      Nếu mở từ icon ngoài Home Screen
-      thì tự động đưa bé vào Apps Script.
-
-      Nếu đang mở bằng Safari bình thường
-      thì giữ launcher lại để có thể Add to Home Screen.
-    */
-
-    const isStandalone =
-
-      window.matchMedia(
-        "(display-mode: standalone)"
-      ).matches
-
-      ||
-
-      window.navigator.standalone === true;
-
-
-
-    if (isStandalone) {
-
-
-      document
-        .getElementById("message")
-        .innerHTML =
-          "💕 Anh đang mở kho ảnh cho bé óooo,<br>xíu xíuuu là tới nèeee 💗";
-
-
-      document
-        .getElementById("smallNote")
-        .innerText =
-          "Đi qua với anh nàooo 📸💕";
-
-
-      setTimeout(
-
-        function() {
-
-          window.location.replace(
-            APP_URL
-          );
-
-        },
-
-        450
-
-      );
-    }
-
-
-  </script>
-
 
 </body>
 
