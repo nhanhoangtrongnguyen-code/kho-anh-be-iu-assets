@@ -1,0 +1,17 @@
+{
+  "name": "Kho Ảnh Xinh Của Em Bé Iu",
+  "short_name": "Kho Ảnh Bé Iu",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffe6ea",
+  "theme_color": "#ffe6ea",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
