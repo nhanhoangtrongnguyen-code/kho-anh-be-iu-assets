@@ -17,16 +17,17 @@
 
 
   <!-- =====================================================
-       GITHUB LAUNCHER BUILD
+       GITHUB LAUNCHER UPDATER GENERATION
 
-       Mỗi lần thay đổi chức năng/file GitHub launcher,
-       chỉ cần đổi content này sang một build ID mới.
-       Bản Home Screen cũ sẽ tự phát hiện và refresh.
+       Marker này chỉ dùng để đưa các máy đang chạy V8.1
+       sang V8.2 lần đầu. TỪ V8.2 TRỞ ĐI KHÔNG CẦN
+       tăng/đổi marker mỗi khi sửa index.html nữa.
+       V8.2 tự so sánh fingerprint của toàn bộ launcher.
   ====================================================== -->
 
   <meta
     name="kho-anh-launcher-build"
-    content="github-v8-auto-update-20260821-03"
+    content="github-v8.2-content-fingerprint-v1"
   >
 
 
@@ -1000,20 +1001,26 @@
 
 
     /* =====================================================
-       GITHUB LAUNCHER AUTO-UPDATE
+       GITHUB LAUNCHER AUTO-UPDATE — V8.2
 
        Mục tiêu:
        - Không block startup.
        - Không ảnh hưởng credential / Apps Script routes.
        - Không dùng Service Worker.
-       - Khi index.html trên GitHub có build mới:
-         → tự reload bằng cache-busting URL.
+       - KHÔNG cần tăng build ID thủ công nữa.
+       - Tự fingerprint toàn bộ launcher HTML:
+           current launcher ↔ fresh index.html từ GitHub.
+       - Nếu khác nhau:
+           → reload bằng cache-busting URL.
+       - Nếu navigation vẫn nhận cache cũ:
+           → tự retry có giới hạn.
        - Nếu offline / GitHub lỗi:
-         → bỏ qua, app hiện tại vẫn dùng bình thường.
+           → bỏ qua, app hiện tại vẫn dùng bình thường.
 
-       QUAN TRỌNG CHO CÁC BẢN SAU:
-       Mỗi khi sửa index.html trên GitHub, đổi duy nhất:
-       <meta name="kho-anh-launcher-build" content="...">
+       LƯU Ý:
+       Meta "kho-anh-launcher-build" ở <head> chỉ còn dùng
+       để migrate các máy V8.1 sang V8.2. Sau khi V8.2 đã
+       chạy, các commit index.html tiếp theo KHÔNG cần đổi nó.
     ====================================================== */
 
     const GITHUB_UPDATE_CHECK_DELAY_MS =
@@ -1025,8 +1032,14 @@
     const GITHUB_UPDATE_RECHECK_MS =
       5 * 1000;
 
+    const GITHUB_UPDATE_MAX_REFRESH_ATTEMPTS =
+      4;
+
+    const GITHUB_UPDATE_RETRY_WINDOW_MS =
+      30 * 1000;
+
     const GITHUB_UPDATE_REFRESH_GUARD_KEY =
-      "khoAnhGithubRefreshGuardV2";
+      "khoAnhGithubRefreshGuardV3";
 
     let githubLastUpdateCheckAt =
       0;
@@ -1034,26 +1047,120 @@
     let githubUpdateCheckRunning =
       false;
 
-
-    function getCurrentGithubLauncherBuild() {
-
-      const meta =
-        document.querySelector(
-          'meta[name="kho-anh-launcher-build"]'
-        );
+    let githubInitialLauncherFingerprint =
+      "";
 
 
-      return meta
-        ? String(
-            meta.getAttribute(
-              "content"
-            ) || ""
-          ).trim()
-        : "";
+    function normalizeLauncherDocumentElement(
+      element
+    ) {
+
+      if (!element) {
+
+        return "";
+      }
+
+
+      const clone =
+        element.cloneNode(true);
+
+
+      /*
+        Script DETECT MODE EARLY thêm các class runtime này
+        ngay khi HTML đang parse. DOMParser của bản remote
+        không chạy script, vì vậy phải bỏ chúng trước khi
+        fingerprint để chỉ so sánh source-controlled content.
+      */
+      clone.classList.remove(
+        "app-mode",
+        "ios-browser",
+        "desktop-mode",
+        "ios-app-open"
+      );
+
+
+      if (
+        !String(
+          clone.getAttribute("class") || ""
+        ).trim()
+      ) {
+
+        clone.removeAttribute("class");
+      }
+
+
+      return clone.outerHTML || "";
     }
 
 
-    function getGithubLauncherBuildFromHtml(
+    function hashLauncherText(
+      text
+    ) {
+
+      const value =
+        String(text || "");
+
+
+      /*
+        FNV-1a 32-bit đủ cho change detection cục bộ.
+        Đây KHÔNG phải security hash và không dùng để xác thực.
+        Thêm length để giảm thêm khả năng collision thực tế.
+      */
+      let hash =
+        0x811c9dc5;
+
+
+      for (
+        let i = 0;
+        i < value.length;
+        i += 1
+      ) {
+
+        hash ^=
+          value.charCodeAt(i);
+
+        hash =
+          Math.imul(
+            hash,
+            0x01000193
+          );
+      }
+
+
+      return (
+        (hash >>> 0)
+          .toString(16)
+          .padStart(8, "0") +
+        "-" +
+        String(value.length)
+      );
+    }
+
+
+    function getLauncherFingerprintFromDocument(
+      doc
+    ) {
+
+      try {
+
+        const normalized =
+          normalizeLauncherDocumentElement(
+            doc && doc.documentElement
+          );
+
+
+        return normalized
+          ? hashLauncherText(normalized)
+          : "";
+
+      } catch (error) {
+
+        return "";
+      }
+    }
+
+
+    function getLauncherFingerprintFromHtml(
       htmlText
     ) {
 
@@ -1065,26 +1172,14 @@
 
         const doc =
           parser.parseFromString(
-            String(
-              htmlText || ""
-            ),
+            String(htmlText || ""),
             "text/html"
           );
 
 
-        const meta =
-          doc.querySelector(
-            'meta[name="kho-anh-launcher-build"]'
-          );
-
-
-        return meta
-          ? String(
-              meta.getAttribute(
-                "content"
-              ) || ""
-            ).trim()
-          : "";
+        return getLauncherFingerprintFromDocument(
+          doc
+        );
 
       } catch (error) {
 
@@ -1093,8 +1188,29 @@
     }
 
 
+    /*
+      Capture source DOM ở DOMContentLoaded TRƯỚC handler
+      INITIALIZE bên dưới thay href/menu. Nhờ vậy fingerprint
+      current vẫn phản ánh file launcher được load, không phản
+      ánh các thay đổi UI runtime sau đó.
+    */
+    document.addEventListener(
+      "DOMContentLoaded",
+      function() {
+
+        githubInitialLauncherFingerprint =
+          getLauncherFingerprintFromDocument(
+            document
+          );
+      },
+      {
+        once: true
+      }
+    );
+
+
     function buildFreshGithubLauncherUrl(
-      remoteBuild,
+      remoteFingerprint,
       attempt
     ) {
 
@@ -1106,18 +1222,21 @@
 
 
       /*
-        Credential bridge đã được consume trước khi
-        update checker chạy, nên KHÔNG mang secret
-        fragment sang URL refresh.
+        Credential bridge đã được consume trước khi updater
+        thực hiện navigation, nên không mang secret fragment
+        sang URL refresh.
       */
       url.hash =
         "";
 
+      url.search =
+        "";
+
 
       url.searchParams.set(
-        "__khoBuild",
+        "__khoFingerprint",
         String(
-          remoteBuild || ""
+          remoteFingerprint || ""
         )
       );
 
@@ -1142,11 +1261,53 @@
     }
 
 
-    const GITHUB_UPDATE_MAX_REFRESH_ATTEMPTS =
-      4;
+    function cleanGithubUpdateQueryParams() {
 
-    const GITHUB_UPDATE_RETRY_WINDOW_MS =
-      30 * 1000;
+      try {
+
+        const url =
+          new URL(
+            window.location.href
+          );
+
+
+        const keys = [
+          "__khoFingerprint",
+          "__khoRefresh",
+          "__khoAttempt",
+          "__khoUpdateCheck"
+        ];
+
+
+        keys.forEach(
+          function(key) {
+
+            url.searchParams.delete(key);
+          }
+        );
+
+
+        const cleanSearch =
+          url.searchParams.toString();
+
+
+        window.history.replaceState(
+          null,
+          "",
+          url.pathname +
+          (
+            cleanSearch
+              ? "?" + cleanSearch
+              : ""
+          ) +
+          url.hash
+        );
+
+      } catch (error) {
+
+        // Không ảnh hưởng app.
+      }
+    }
 
 
     function clearGithubRefreshGuard() {
@@ -1165,7 +1326,7 @@
 
 
     function registerGithubRefreshAttempt(
-      remoteBuild
+      remoteFingerprint
     ) {
 
       const now =
@@ -1199,13 +1360,14 @@
         }
 
 
-        const sameBuild =
+        const sameFingerprint =
           state &&
-          state.build === remoteBuild;
+          state.fingerprint ===
+            remoteFingerprint;
 
 
         const stillSameWindow =
-          sameBuild &&
+          sameFingerprint &&
           Number.isFinite(state.startedAt) &&
           (
             now - state.startedAt
@@ -1217,7 +1379,8 @@
         ) {
 
           state = {
-            build: remoteBuild,
+            fingerprint:
+              remoteFingerprint,
             attempts: 0,
             startedAt: now
           };
@@ -1310,7 +1473,6 @@
                 // Không ảnh hưởng app.
               }
             }
-
           },
           GITHUB_UPDATE_CHECK_TIMEOUT_MS
         );
@@ -1318,11 +1480,6 @@
 
       try {
 
-        /*
-          Luôn hỏi trực tiếp index.html mới nhất.
-          Timestamp + cache:"no-store" tránh dùng
-          bản HTML đang nằm trong Safari/Home Screen cache.
-        */
         const checkUrl =
           new URL(
             "./index.html",
@@ -1332,7 +1489,6 @@
 
         checkUrl.hash =
           "";
-
 
         checkUrl.search =
           "";
@@ -1389,24 +1545,23 @@
           await response.text();
 
 
-        const remoteBuild =
-          getGithubLauncherBuildFromHtml(
+        const remoteFingerprint =
+          getLauncherFingerprintFromHtml(
             freshHtml
           );
 
 
-        const currentBuild =
-          getCurrentGithubLauncherBuild();
+        const currentFingerprint =
+          githubInitialLauncherFingerprint;
 
 
         /*
-          Nếu build marker chưa có / response chưa phải
-          index launcher hoàn chỉnh → không refresh.
-          Fail-safe: ưu tiên để app hiện tại tiếp tục chạy.
+          Fail-safe: nếu không fingerprint được một trong hai
+          phía thì không reload. App hiện tại vẫn tiếp tục chạy.
         */
         if (
-          !remoteBuild ||
-          !currentBuild
+          !remoteFingerprint ||
+          !currentFingerprint
         ) {
 
           return false;
@@ -1414,27 +1569,26 @@
 
 
         if (
-          remoteBuild ===
-          currentBuild
+          remoteFingerprint ===
+          currentFingerprint
         ) {
 
           clearGithubRefreshGuard();
+          cleanGithubUpdateQueryParams();
 
           return false;
         }
 
 
         /*
-          Có bản GitHub mới.
-
-          V8.1 cho phép thử lại tối đa 4 lần trong 30 giây
-          nếu iOS/GitHub Pages vẫn trả HTML cũ cho navigation.
-          Bản trước chỉ cho thử 1 lần trong cùng session, nên
-          đôi khi phải đóng/mở app nhiều lần mới nhận update.
+          Toàn bộ launcher source trên GitHub đã thay đổi.
+          Không cần build ID. Cache-busting navigation lấy
+          bản mới; nếu iOS vẫn giữ cache cũ, guard cho retry
+          tối đa 4 lần trong 30 giây.
         */
         const refreshAttempt =
           registerGithubRefreshAttempt(
-            remoteBuild
+            remoteFingerprint
           );
 
 
@@ -1444,13 +1598,9 @@
         }
 
 
-        /*
-          Điều hướng đúng vào ./index.html (cùng resource vừa fetch)
-          thay vì directory root ./ để tránh một cache key khác.
-        */
         window.location.replace(
           buildFreshGithubLauncherUrl(
-            remoteBuild,
+            remoteFingerprint,
             refreshAttempt
           )
         );
@@ -1486,7 +1636,6 @@
         function() {
 
           checkGithubLauncherUpdate();
-
         },
         typeof delayMs === "number"
           ? delayMs
@@ -1496,12 +1645,10 @@
 
 
     /*
-      Nếu iOS giữ Home Screen app trong bộ nhớ rồi resume
-      thay vì load lại trang, visibilitychange vẫn cho phép
-      kiểm tra bản GitHub mới.
-
-      Có throttle ngắn 5 giây để tránh request trùng khi
-      pageshow/visibilitychange xảy ra gần nhau.
+      Home Screen app có thể được iOS giữ trong RAM.
+      Khi quay lại foreground, kiểm tra lại nhưng có throttle
+      để tránh request trùng khi pageshow/visibilitychange
+      xảy ra sát nhau.
     */
     window.addEventListener(
       "pageshow",
