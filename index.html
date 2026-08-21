@@ -71,6 +71,7 @@
     href="//script.google.com"
   >
 
+
   <!-- =====================================================
        DETECT MODE EARLY
 
@@ -321,6 +322,25 @@
     html.app-mode .install-screen,
     html.desktop-mode .install-screen {
       display: none;
+    }
+
+
+    /* =====================================================
+       IOS SAFARI MENU MODE
+
+       Safari bình thường:
+       - lúc đầu vẫn hiện hướng dẫn Add to Home Screen
+       - bấm "Mở Kho Ảnh" thì hiện đúng menu như desktop
+       - KHÔNG nhảy thẳng vào uploader nữa
+    ====================================================== */
+
+    html.ios-browser.ios-menu-mode .install-screen {
+      display: none;
+    }
+
+
+    html.ios-browser.ios-menu-mode .app-screen {
+      display: block;
     }
 
 
@@ -585,22 +605,36 @@
     }
 
 
-    .favorites-button {
+    .gallery-notice {
 
-      color:
-        #ff3366;
+      display: none;
+
+      margin:
+        2px 0 4px;
+
+      padding:
+        11px 13px;
+
+      border-radius: 14px;
 
       background:
-        linear-gradient(
-          135deg,
-          #fff7fa,
-          #ffe8ef
-        );
+        #fff8fa;
 
       border:
-        1px solid #ffb8c9;
+        1px solid #ffd3dd;
+
+      color:
+        #d87093;
+
+      font-size: 12.5px;
+
+      line-height: 1.5;
     }
 
+
+    .gallery-notice.show {
+      display: block;
+    }
 
 
     /* =====================================================
@@ -772,64 +806,28 @@
 
 
     function buildAppsScriptUrl(
-      credential,
-      view,
-      albumKey
+      credential
     ) {
 
-      const params =
-        new URLSearchParams();
-
-
       if (
-        looksLikeDeviceCredential(
+        !looksLikeDeviceCredential(
           credential
         )
       ) {
 
-        params.set(
-          "deviceCredential",
+        return APP_URL;
+      }
+
+
+      return (
+        APP_URL +
+        "#deviceCredential=" +
+        encodeURIComponent(
           credential
-        );
-      }
-
-
-      if (view === "gallery") {
-
-        params.set(
-          "view",
-          "gallery"
-        );
-
-
-        if (
-          albumKey === "baby" ||
-          albumKey === "couple" ||
-          albumKey === "favorites" ||
-          albumKey === "timeline"
-        ) {
-
-          params.set(
-            "album",
-            albumKey
-          );
-        }
-      }
-
-
-      if (view === "collections") {
-        params.set("view", "collections");
-      }
-
-
-      const hash =
-        params.toString();
-
-
-      return hash
-        ? APP_URL + "#" + hash
-        : APP_URL;
+        )
+      );
     }
+
 
     function consumeCredentialBridge() {
 
@@ -866,12 +864,6 @@
         ) || "";
 
 
-      const continueAlbum =
-        params.get(
-          "album"
-        ) || "";
-
-
       if (
         !looksLikeDeviceCredential(
           incomingCredential
@@ -888,9 +880,6 @@
         );
 
 
-      /*
-        Remove the secret fragment from GitHub history immediately.
-      */
       try {
 
         window.history.replaceState(
@@ -902,63 +891,17 @@
 
       } catch (error) {
 
-        // Không ảnh hưởng tới flow chính.
-      }
-
-
-      if (!saved) {
-
-        return false;
       }
 
 
       if (
-        continueTarget === "gallery" &&
-        (
-          continueAlbum === "baby" ||
-          continueAlbum === "couple" ||
-          continueAlbum === "favorites" ||
-          continueAlbum === "timeline"
-        )
-      ) {
-
-        window.location.replace(
-          buildAppsScriptUrl(
-            incomingCredential,
-            "gallery",
-            continueAlbum
-          )
-        );
-
-        return true;
-      }
-
-
-      if (
-        continueTarget === "collections"
-      ) {
-
-        window.location.replace(
-          buildAppsScriptUrl(
-            incomingCredential,
-            "collections",
-            ""
-          )
-        );
-
-        return true;
-      }
-
-
-      if (
+        saved &&
         continueTarget === "upload"
       ) {
 
         window.location.replace(
           buildAppsScriptUrl(
-            incomingCredential,
-            "upload",
-            ""
+            incomingCredential
           )
         );
 
@@ -979,11 +922,6 @@
 
       function() {
 
-        /*
-          Enrollment bridge:
-          Apps Script → GitHub saves credential → Apps Script.
-          This only happens after a successful enrollment.
-        */
         if (
           consumeCredentialBridge()
         ) {
@@ -1020,110 +958,29 @@
           getStoredLauncherCredential();
 
 
-        const uploadHref =
+        const appHref =
           buildAppsScriptUrl(
-            storedCredential,
-            "upload",
-            ""
+            storedCredential
           );
 
 
         if (uploadLink) {
 
           uploadLink.href =
-            uploadHref;
+            appHref;
         }
 
 
         if (openAppLink) {
 
           openAppLink.href =
-            uploadHref;
-        }
+            "#";
 
 
-        const galleryBabyLink =
-          document.getElementById(
-            "galleryBabyLink"
+          openAppLink.addEventListener(
+            "click",
+            openSafariMenu
           );
-
-
-        const galleryCoupleLink =
-          document.getElementById(
-            "galleryCoupleLink"
-          );
-
-
-        const galleryFavoritesLink =
-          document.getElementById(
-            "galleryFavoritesLink"
-          );
-
-
-        const galleryTimelineLink =
-          document.getElementById(
-            "galleryTimelineLink"
-          );
-
-
-        const collectionsLink =
-          document.getElementById(
-            "collectionsLink"
-          );
-
-
-        if (galleryBabyLink) {
-
-          galleryBabyLink.href =
-            buildAppsScriptUrl(
-              storedCredential,
-              "gallery",
-              "baby"
-            );
-        }
-
-
-        if (galleryCoupleLink) {
-
-          galleryCoupleLink.href =
-            buildAppsScriptUrl(
-              storedCredential,
-              "gallery",
-              "couple"
-            );
-        }
-
-
-        if (galleryFavoritesLink) {
-
-          galleryFavoritesLink.href =
-            buildAppsScriptUrl(
-              storedCredential,
-              "gallery",
-              "favorites"
-            );
-        }
-
-
-        if (galleryTimelineLink) {
-
-          galleryTimelineLink.href =
-            buildAppsScriptUrl(
-              storedCredential,
-              "gallery",
-              "timeline"
-            );
-        }
-
-
-        if (collectionsLink) {
-
-          collectionsLink.href =
-            buildAppsScriptUrl(
-              storedCredential,
-              "collections",
-              ""
-            );
         }
 
 
@@ -1178,6 +1035,52 @@
 
 
     /* =====================================================
+       OPEN SAFARI MENU
+    ====================================================== */
+
+    function openSafariMenu(event) {
+
+      if (event) {
+        event.preventDefault();
+      }
+
+
+      document.documentElement
+        .classList
+        .add(
+          "ios-menu-mode"
+        );
+
+
+      const launchMessage =
+        document.getElementById(
+          "launchMessage"
+        );
+
+
+      const mainMenu =
+        document.getElementById(
+          "mainMenu"
+        );
+
+
+      if (launchMessage) {
+
+        launchMessage.style.display =
+          "none";
+      }
+
+
+      if (mainMenu) {
+
+        mainMenu.classList.add(
+          "show"
+        );
+      }
+    }
+
+
+    /* =====================================================
        OPEN ALBUM MENU
     ====================================================== */
 
@@ -1207,6 +1110,27 @@
 
 
     /* =====================================================
+       GALLERY PLACEHOLDER
+    ====================================================== */
+
+    function showGalleryComingSoon() {
+
+      const notice =
+        document.getElementById(
+          "galleryNotice"
+        );
+
+
+      if (notice) {
+
+        notice.classList.add(
+          "show"
+        );
+      }
+    }
+
+
+    /* =====================================================
        BACK TO MAIN MENU
     ====================================================== */
 
@@ -1224,9 +1148,23 @@
         );
 
 
+      const galleryNotice =
+        document.getElementById(
+          "galleryNotice"
+        );
+
+
       albumMenu.classList.remove(
         "show"
       );
+
+
+      if (galleryNotice) {
+
+        galleryNotice.classList.remove(
+          "show"
+        );
+      }
 
 
       mainMenu.classList.add(
@@ -1312,10 +1250,6 @@
     </h1>
 
 
-    <!-- ===================================================
-         HOME SCREEN INTRO
-    ==================================================== -->
-
     <div
       id="launchMessage"
       class="launch-message"
@@ -1330,10 +1264,6 @@
     </div>
 
 
-    <!-- ===================================================
-         MAIN MENU
-    ==================================================== -->
-
     <div
       id="mainMenu"
       class="menu"
@@ -1343,8 +1273,6 @@
         Bé muốn làm gì nèeee? 💕
       </div>
 
-
-      <!-- UPLOAD -->
 
       <a
         id="uploadLink"
@@ -1372,8 +1300,6 @@
 
       </a>
 
-
-      <!-- VIEW -->
 
       <button
         type="button"
@@ -1404,10 +1330,6 @@
     </div>
 
 
-    <!-- ===================================================
-         ALBUM MENU
-    ==================================================== -->
-
     <div
       id="albumMenu"
       class="menu"
@@ -1418,12 +1340,10 @@
       </div>
 
 
-      <!-- BABY -->
-
-      <a
-        id="galleryBabyLink"
+      <button
+        type="button"
         class="app-button baby-button"
-        href="#"
+        onclick="showGalleryComingSoon()"
       >
 
         <span class="button-icon">
@@ -1444,15 +1364,13 @@
 
         </span>
 
-      </a>
+      </button>
 
 
-      <!-- COUPLE -->
-
-      <a
-        id="galleryCoupleLink"
+      <button
+        type="button"
         class="app-button couple-button"
-        href="#"
+        onclick="showGalleryComingSoon()"
       >
 
         <span class="button-icon">
@@ -1473,87 +1391,17 @@
 
         </span>
 
-      </a>
+      </button>
 
 
-      <!-- FAVORITES -->
-
-      <a
-        id="galleryFavoritesLink"
-        class="app-button favorites-button"
-        href="#"
+      <div
+        id="galleryNotice"
+        class="gallery-notice"
       >
+        💕 Phần xem ảnh đang được anh nâng cấp nèeee.
+        Mình sẽ nối Gallery an toàn vào đây ở bước sau nhaaa 💗
+      </div>
 
-        <span class="button-icon">
-          ❤️
-        </span>
-
-
-        <span class="button-text">
-
-          <span class="button-title">
-            Kỷ niệm đặc biệt
-          </span>
-
-
-          <span class="button-subtitle">
-            Những tấm mình đã thả tim nằm ở đây nèeee
-          </span>
-
-        </span>
-
-      </a>
-
-
-      <!-- TIMELINE -->
-
-      <a
-        id="galleryTimelineLink"
-        class="app-button favorites-button"
-        href="#"
-      >
-
-        <span class="button-icon">
-          📖
-        </span>
-
-        <span class="button-text">
-          <span class="button-title">
-            Nhật ký kỷ niệm
-          </span>
-          <span class="button-subtitle">
-            Ảnh có ❤️ hoặc 💌 tự chạy vào dòng thời gian nèeee
-          </span>
-        </span>
-
-      </a>
-
-
-      <!-- COLLECTIONS -->
-
-      <a
-        id="collectionsLink"
-        class="app-button favorites-button"
-        href="#"
-      >
-
-        <span class="button-icon">
-          🎀
-        </span>
-
-        <span class="button-text">
-          <span class="button-title">
-            Bộ sưu tập
-          </span>
-          <span class="button-subtitle">
-            Gom ảnh thành từng câu chuyện riêng của tụi mình nhaaa
-          </span>
-        </span>
-
-      </a>
-
-
-      <!-- BACK -->
 
       <button
         type="button"
