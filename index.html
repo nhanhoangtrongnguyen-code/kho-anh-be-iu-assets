@@ -805,7 +805,8 @@
         if (
           albumKey === "baby" ||
           albumKey === "couple" ||
-          albumKey === "favorites"
+          albumKey === "favorites" ||
+          albumKey === "timeline"
         ) {
 
           params.set(
@@ -813,6 +814,11 @@
             albumKey
           );
         }
+      }
+
+
+      if (view === "collections") {
+        params.set("view", "collections");
       }
 
 
@@ -824,7 +830,6 @@
         ? APP_URL + "#" + hash
         : APP_URL;
     }
-
 
     function consumeCredentialBridge() {
 
@@ -912,7 +917,8 @@
         (
           continueAlbum === "baby" ||
           continueAlbum === "couple" ||
-          continueAlbum === "favorites"
+          continueAlbum === "favorites" ||
+          continueAlbum === "timeline"
         )
       ) {
 
@@ -921,6 +927,22 @@
             incomingCredential,
             "gallery",
             continueAlbum
+          )
+        );
+
+        return true;
+      }
+
+
+      if (
+        continueTarget === "collections"
+      ) {
+
+        window.location.replace(
+          buildAppsScriptUrl(
+            incomingCredential,
+            "collections",
+            ""
           )
         );
 
@@ -1038,6 +1060,18 @@
           );
 
 
+        const galleryTimelineLink =
+          document.getElementById(
+            "galleryTimelineLink"
+          );
+
+
+        const collectionsLink =
+          document.getElementById(
+            "collectionsLink"
+          );
+
+
         if (galleryBabyLink) {
 
           galleryBabyLink.href =
@@ -1067,6 +1101,28 @@
               storedCredential,
               "gallery",
               "favorites"
+            );
+        }
+
+
+        if (galleryTimelineLink) {
+
+          galleryTimelineLink.href =
+            buildAppsScriptUrl(
+              storedCredential,
+              "gallery",
+              "timeline"
+            );
+        }
+
+
+        if (collectionsLink) {
+
+          collectionsLink.href =
+            buildAppsScriptUrl(
+              storedCredential,
+              "collections",
+              ""
             );
         }
 
@@ -1444,6 +1500,54 @@
             Những tấm mình đã thả tim nằm ở đây nèeee
           </span>
 
+        </span>
+
+      </a>
+
+
+      <!-- TIMELINE -->
+
+      <a
+        id="galleryTimelineLink"
+        class="app-button favorites-button"
+        href="#"
+      >
+
+        <span class="button-icon">
+          📖
+        </span>
+
+        <span class="button-text">
+          <span class="button-title">
+            Nhật ký kỷ niệm
+          </span>
+          <span class="button-subtitle">
+            Ảnh có ❤️ hoặc 💌 tự chạy vào dòng thời gian nèeee
+          </span>
+        </span>
+
+      </a>
+
+
+      <!-- COLLECTIONS -->
+
+      <a
+        id="collectionsLink"
+        class="app-button favorites-button"
+        href="#"
+      >
+
+        <span class="button-icon">
+          🎀
+        </span>
+
+        <span class="button-text">
+          <span class="button-title">
+            Bộ sưu tập
+          </span>
+          <span class="button-subtitle">
+            Gom ảnh thành từng câu chuyện riêng của tụi mình nhaaa
+          </span>
         </span>
 
       </a>
