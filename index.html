@@ -17,6 +17,20 @@
 
 
   <!-- =====================================================
+       GITHUB LAUNCHER BUILD
+
+       Mỗi lần thay đổi chức năng/file GitHub launcher,
+       chỉ cần đổi content này sang một build ID mới.
+       Bản Home Screen cũ sẽ tự phát hiện và refresh.
+  ====================================================== -->
+
+  <meta
+    name="kho-anh-launcher-build"
+    content="github-v8-auto-update-20260821-01"
+  >
+
+
+  <!-- =====================================================
        HOME SCREEN ICON
   ====================================================== -->
 
@@ -986,6 +1000,440 @@
 
 
     /* =====================================================
+       GITHUB LAUNCHER AUTO-UPDATE
+
+       Mục tiêu:
+       - Không block startup.
+       - Không ảnh hưởng credential / Apps Script routes.
+       - Không dùng Service Worker.
+       - Khi index.html trên GitHub có build mới:
+         → tự reload bằng cache-busting URL.
+       - Nếu offline / GitHub lỗi:
+         → bỏ qua, app hiện tại vẫn dùng bình thường.
+
+       QUAN TRỌNG CHO CÁC BẢN SAU:
+       Mỗi khi sửa index.html trên GitHub, đổi duy nhất:
+       <meta name="kho-anh-launcher-build" content="...">
+    ====================================================== */
+
+    const GITHUB_UPDATE_CHECK_DELAY_MS =
+      900;
+
+    const GITHUB_UPDATE_CHECK_TIMEOUT_MS =
+      4500;
+
+    const GITHUB_UPDATE_RECHECK_MS =
+      15 * 60 * 1000;
+
+    const GITHUB_UPDATE_REFRESH_GUARD_KEY =
+      "khoAnhGithubRefreshGuardV1";
+
+    let githubLastUpdateCheckAt =
+      0;
+
+    let githubUpdateCheckRunning =
+      false;
+
+
+    function getCurrentGithubLauncherBuild() {
+
+      const meta =
+        document.querySelector(
+          'meta[name="kho-anh-launcher-build"]'
+        );
+
+
+      return meta
+        ? String(
+            meta.getAttribute(
+              "content"
+            ) || ""
+          ).trim()
+        : "";
+    }
+
+
+    function getGithubLauncherBuildFromHtml(
+      htmlText
+    ) {
+
+      try {
+
+        const parser =
+          new DOMParser();
+
+
+        const doc =
+          parser.parseFromString(
+            String(
+              htmlText || ""
+            ),
+            "text/html"
+          );
+
+
+        const meta =
+          doc.querySelector(
+            'meta[name="kho-anh-launcher-build"]'
+          );
+
+
+        return meta
+          ? String(
+              meta.getAttribute(
+                "content"
+              ) || ""
+            ).trim()
+          : "";
+
+      } catch (error) {
+
+        return "";
+      }
+    }
+
+
+    function buildFreshGithubLauncherUrl(
+      remoteBuild
+    ) {
+
+      const url =
+        new URL(
+          "./",
+          window.location.href
+        );
+
+
+      /*
+        Credential bridge đã được consume trước khi
+        update checker chạy, nên KHÔNG mang secret
+        fragment sang URL refresh.
+      */
+      url.hash =
+        "";
+
+
+      url.searchParams.set(
+        "__khoBuild",
+        String(
+          remoteBuild || ""
+        )
+      );
+
+
+      url.searchParams.set(
+        "__khoRefresh",
+        String(
+          Date.now()
+        )
+      );
+
+
+      return url.toString();
+    }
+
+
+    async function checkGithubLauncherUpdate() {
+
+      if (
+        githubUpdateCheckRunning
+      ) {
+
+        return false;
+      }
+
+
+      const now =
+        Date.now();
+
+
+      if (
+        githubLastUpdateCheckAt &&
+        (
+          now -
+          githubLastUpdateCheckAt
+        ) <
+        GITHUB_UPDATE_RECHECK_MS
+      ) {
+
+        return false;
+      }
+
+
+      githubUpdateCheckRunning =
+        true;
+
+      githubLastUpdateCheckAt =
+        now;
+
+
+      const controller =
+        typeof AbortController !==
+        "undefined"
+          ? new AbortController()
+          : null;
+
+
+      const timeoutId =
+        window.setTimeout(
+          function() {
+
+            if (controller) {
+
+              try {
+
+                controller.abort();
+
+              } catch (error) {
+
+                // Không ảnh hưởng app.
+              }
+            }
+
+          },
+          GITHUB_UPDATE_CHECK_TIMEOUT_MS
+        );
+
+
+      try {
+
+        /*
+          Luôn hỏi trực tiếp index.html mới nhất.
+          Timestamp + cache:"no-store" tránh dùng
+          bản HTML đang nằm trong Safari/Home Screen cache.
+        */
+        const checkUrl =
+          new URL(
+            "./index.html",
+            window.location.href
+          );
+
+
+        checkUrl.hash =
+          "";
+
+
+        checkUrl.search =
+          "";
+
+
+        checkUrl.searchParams.set(
+          "__khoUpdateCheck",
+          String(
+            Date.now()
+          )
+        );
+
+
+        const fetchOptions = {
+
+          method:
+            "GET",
+
+          cache:
+            "no-store",
+
+          credentials:
+            "same-origin",
+
+          redirect:
+            "follow"
+        };
+
+
+        if (controller) {
+
+          fetchOptions.signal =
+            controller.signal;
+        }
+
+
+        const response =
+          await fetch(
+            checkUrl.toString(),
+            fetchOptions
+          );
+
+
+        if (
+          !response ||
+          !response.ok
+        ) {
+
+          return false;
+        }
+
+
+        const freshHtml =
+          await response.text();
+
+
+        const remoteBuild =
+          getGithubLauncherBuildFromHtml(
+            freshHtml
+          );
+
+
+        const currentBuild =
+          getCurrentGithubLauncherBuild();
+
+
+        /*
+          Nếu build marker chưa có / response chưa phải
+          index launcher hoàn chỉnh → không refresh.
+          Fail-safe: ưu tiên để app hiện tại tiếp tục chạy.
+        */
+        if (
+          !remoteBuild ||
+          !currentBuild
+        ) {
+
+          return false;
+        }
+
+
+        if (
+          remoteBuild ===
+          currentBuild
+        ) {
+
+          /*
+            Nếu lần refresh trước đã thành công,
+            bỏ guard cũ để lần update sau hoạt động bình thường.
+          */
+          try {
+
+            sessionStorage.removeItem(
+              GITHUB_UPDATE_REFRESH_GUARD_KEY
+            );
+
+          } catch (error) {
+
+            // Không ảnh hưởng app.
+          }
+
+
+          return false;
+        }
+
+
+        /*
+          Chống vòng lặp refresh trong tình huống hiếm:
+          GitHub Pages đã trả source mới cho fetch(),
+          nhưng navigation vẫn bị CDN/browser trả HTML cũ.
+
+          Một build chỉ auto-refresh một lần trong cùng session.
+          App cũ vẫn dùng được nếu refresh không thành công.
+        */
+        try {
+
+          const guardedBuild =
+            sessionStorage.getItem(
+              GITHUB_UPDATE_REFRESH_GUARD_KEY
+            ) || "";
+
+
+          if (
+            guardedBuild ===
+            remoteBuild
+          ) {
+
+            return false;
+          }
+
+
+          sessionStorage.setItem(
+            GITHUB_UPDATE_REFRESH_GUARD_KEY,
+            remoteBuild
+          );
+
+        } catch (error) {
+
+          /*
+            Safari private/storage restriction:
+            vẫn tiếp tục refresh bình thường.
+          */
+        }
+
+
+        /*
+          Có bản GitHub mới.
+
+          Không đổi localStorage credential.
+          Không gọi Apps Script.
+          Chỉ điều hướng launcher sang URL có cache-buster.
+        */
+        window.location.replace(
+          buildFreshGithubLauncherUrl(
+            remoteBuild
+          )
+        );
+
+
+        return true;
+
+      } catch (error) {
+
+        /*
+          Offline / timeout / GitHub tạm lỗi:
+          tuyệt đối không chặn launcher.
+        */
+        return false;
+
+      } finally {
+
+        window.clearTimeout(
+          timeoutId
+        );
+
+        githubUpdateCheckRunning =
+          false;
+      }
+    }
+
+
+    function scheduleGithubLauncherUpdateCheck(
+      delayMs
+    ) {
+
+      window.setTimeout(
+        function() {
+
+          checkGithubLauncherUpdate();
+
+        },
+        typeof delayMs === "number"
+          ? delayMs
+          : GITHUB_UPDATE_CHECK_DELAY_MS
+      );
+    }
+
+
+    /*
+      Nếu iOS giữ Home Screen app trong bộ nhớ rồi resume
+      thay vì load lại trang, visibilitychange vẫn cho phép
+      kiểm tra bản GitHub mới.
+
+      Có throttle 15 phút nên không spam request.
+    */
+    document.addEventListener(
+      "visibilitychange",
+      function() {
+
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+
+          scheduleGithubLauncherUpdateCheck(
+            250
+          );
+        }
+      }
+    );
+
+
+    /* =====================================================
        INITIALIZE
     ====================================================== */
 
@@ -1005,6 +1453,16 @@
 
           return;
         }
+
+
+        /*
+          Không chờ update check.
+          Menu/links tiếp tục initialize ngay;
+          checker chạy nền sau một khoảng rất ngắn.
+        */
+        scheduleGithubLauncherUpdateCheck(
+          GITHUB_UPDATE_CHECK_DELAY_MS
+        );
 
 
         const uploadLink =
