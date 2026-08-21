@@ -71,7 +71,6 @@
     href="//script.google.com"
   >
 
-
   <!-- =====================================================
        DETECT MODE EARLY
 
@@ -278,6 +277,21 @@
     }
 
 
+    /*
+      Safari bình thường:
+      sau khi bé bấm “Mở Kho Ảnh”, không đi thẳng vào uploader nữa.
+      Chuyển ngay trên GitHub launcher sang cùng menu với desktop/Home Screen.
+    */
+    html.ios-browser.ios-app-open .install-screen {
+      display: none;
+    }
+
+
+    html.ios-browser.ios-app-open .app-screen {
+      display: block;
+    }
+
+
     .hint {
 
       margin-top: 16px;
@@ -322,25 +336,6 @@
     html.app-mode .install-screen,
     html.desktop-mode .install-screen {
       display: none;
-    }
-
-
-    /* =====================================================
-       IOS SAFARI MENU MODE
-
-       Safari bình thường:
-       - lúc đầu vẫn hiện hướng dẫn Add to Home Screen
-       - bấm "Mở Kho Ảnh" thì hiện đúng menu như desktop
-       - KHÔNG nhảy thẳng vào uploader nữa
-    ====================================================== */
-
-    html.ios-browser.ios-menu-mode .install-screen {
-      display: none;
-    }
-
-
-    html.ios-browser.ios-menu-mode .app-screen {
-      display: block;
     }
 
 
@@ -605,36 +600,22 @@
     }
 
 
-    .gallery-notice {
-
-      display: none;
-
-      margin:
-        2px 0 4px;
-
-      padding:
-        11px 13px;
-
-      border-radius: 14px;
-
-      background:
-        #fff8fa;
-
-      border:
-        1px solid #ffd3dd;
+    .favorites-button {
 
       color:
-        #d87093;
+        #ff3366;
 
-      font-size: 12.5px;
+      background:
+        linear-gradient(
+          135deg,
+          #fff7fa,
+          #ffe8ef
+        );
 
-      line-height: 1.5;
+      border:
+        1px solid #ffb8c9;
     }
 
-
-    .gallery-notice.show {
-      display: block;
-    }
 
 
     /* =====================================================
@@ -806,28 +787,64 @@
 
 
     function buildAppsScriptUrl(
-      credential
+      credential,
+      view,
+      albumKey
     ) {
 
+      const params =
+        new URLSearchParams();
+
+
       if (
-        !looksLikeDeviceCredential(
+        looksLikeDeviceCredential(
           credential
         )
       ) {
 
-        return APP_URL;
+        params.set(
+          "deviceCredential",
+          credential
+        );
       }
 
 
-      return (
-        APP_URL +
-        "#deviceCredential=" +
-        encodeURIComponent(
-          credential
-        )
-      );
-    }
+      if (view === "gallery") {
 
+        params.set(
+          "view",
+          "gallery"
+        );
+
+
+        if (
+          albumKey === "baby" ||
+          albumKey === "couple" ||
+          albumKey === "favorites" ||
+          albumKey === "timeline"
+        ) {
+
+          params.set(
+            "album",
+            albumKey
+          );
+        }
+      }
+
+
+      if (view === "collections") {
+        params.set("view", "collections");
+      }
+
+
+      const hash =
+        params.toString();
+
+
+      return hash
+        ? APP_URL + "#" + hash
+        : APP_URL;
+    }
 
     function consumeCredentialBridge() {
 
@@ -864,6 +881,12 @@
         ) || "";
 
 
+      const continueAlbum =
+        params.get(
+          "album"
+        ) || "";
+
+
       if (
         !looksLikeDeviceCredential(
           incomingCredential
@@ -880,6 +903,9 @@
         );
 
 
+      /*
+        Remove the secret fragment from GitHub history immediately.
+      */
       try {
 
         window.history.replaceState(
@@ -891,17 +917,63 @@
 
       } catch (error) {
 
+        // Không ảnh hưởng tới flow chính.
+      }
+
+
+      if (!saved) {
+
+        return false;
       }
 
 
       if (
-        saved &&
+        continueTarget === "gallery" &&
+        (
+          continueAlbum === "baby" ||
+          continueAlbum === "couple" ||
+          continueAlbum === "favorites" ||
+          continueAlbum === "timeline"
+        )
+      ) {
+
+        window.location.replace(
+          buildAppsScriptUrl(
+            incomingCredential,
+            "gallery",
+            continueAlbum
+          )
+        );
+
+        return true;
+      }
+
+
+      if (
+        continueTarget === "collections"
+      ) {
+
+        window.location.replace(
+          buildAppsScriptUrl(
+            incomingCredential,
+            "collections",
+            ""
+          )
+        );
+
+        return true;
+      }
+
+
+      if (
         continueTarget === "upload"
       ) {
 
         window.location.replace(
           buildAppsScriptUrl(
-            incomingCredential
+            incomingCredential,
+            "upload",
+            ""
           )
         );
 
@@ -922,6 +994,11 @@
 
       function() {
 
+        /*
+          Enrollment bridge:
+          Apps Script → GitHub saves credential → Apps Script.
+          This only happens after a successful enrollment.
+        */
         if (
           consumeCredentialBridge()
         ) {
@@ -958,29 +1035,126 @@
           getStoredLauncherCredential();
 
 
-        const appHref =
+        const uploadHref =
           buildAppsScriptUrl(
-            storedCredential
+            storedCredential,
+            "upload",
+            ""
           );
 
 
         if (uploadLink) {
 
           uploadLink.href =
-            appHref;
+            uploadHref;
         }
 
 
         if (openAppLink) {
 
+          /*
+            Safari iPhone/iPad không được đi thẳng vào upload.
+            Nút này chỉ mở menu GitHub giống desktop để bé tự chọn:
+            - Gửi ảnh cho anh
+            - Xem ảnh
+          */
           openAppLink.href =
             "#";
 
 
           openAppLink.addEventListener(
             "click",
-            openSafariMenu
+            function(event) {
+
+              event.preventDefault();
+              openSafariAppMenu();
+            }
           );
+        }
+
+
+        const galleryBabyLink =
+          document.getElementById(
+            "galleryBabyLink"
+          );
+
+
+        const galleryCoupleLink =
+          document.getElementById(
+            "galleryCoupleLink"
+          );
+
+
+        const galleryFavoritesLink =
+          document.getElementById(
+            "galleryFavoritesLink"
+          );
+
+
+        const galleryTimelineLink =
+          document.getElementById(
+            "galleryTimelineLink"
+          );
+
+
+        const collectionsLink =
+          document.getElementById(
+            "collectionsLink"
+          );
+
+
+        if (galleryBabyLink) {
+
+          galleryBabyLink.href =
+            buildAppsScriptUrl(
+              storedCredential,
+              "gallery",
+              "baby"
+            );
+        }
+
+
+        if (galleryCoupleLink) {
+
+          galleryCoupleLink.href =
+            buildAppsScriptUrl(
+              storedCredential,
+              "gallery",
+              "couple"
+            );
+        }
+
+
+        if (galleryFavoritesLink) {
+
+          galleryFavoritesLink.href =
+            buildAppsScriptUrl(
+              storedCredential,
+              "gallery",
+              "favorites"
+            );
+        }
+
+
+        if (galleryTimelineLink) {
+
+          galleryTimelineLink.href =
+            buildAppsScriptUrl(
+              storedCredential,
+              "gallery",
+              "timeline"
+            );
+        }
+
+
+        if (collectionsLink) {
+
+          collectionsLink.href =
+            buildAppsScriptUrl(
+              storedCredential,
+              "collections",
+              ""
+            );
         }
 
 
@@ -1035,21 +1209,19 @@
 
 
     /* =====================================================
-       OPEN SAFARI MENU
+       SAFARI NORMAL BROWSER → OPEN SAME MENU AS DESKTOP
+
+       Quan trọng:
+       - Không gọi Apps Script ở bước này.
+       - Không mở file picker.
+       - Không thay đổi credential/upload pipeline.
+       - Chỉ chuyển UI ngay trên GitHub launcher.
     ====================================================== */
 
-    function openSafariMenu(event) {
+    function openSafariAppMenu() {
 
-      if (event) {
-        event.preventDefault();
-      }
-
-
-      document.documentElement
-        .classList
-        .add(
-          "ios-menu-mode"
-        );
+      const root =
+        document.documentElement;
 
 
       const launchMessage =
@@ -1064,10 +1236,29 @@
         );
 
 
+      const albumMenu =
+        document.getElementById(
+          "albumMenu"
+        );
+
+
+      root.classList.add(
+        "ios-app-open"
+      );
+
+
       if (launchMessage) {
 
         launchMessage.style.display =
           "none";
+      }
+
+
+      if (albumMenu) {
+
+        albumMenu.classList.remove(
+          "show"
+        );
       }
 
 
@@ -1076,6 +1267,19 @@
         mainMenu.classList.add(
           "show"
         );
+      }
+
+
+      try {
+
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
+
+      } catch (error) {
+
+        window.scrollTo(0, 0);
       }
     }
 
@@ -1110,27 +1314,6 @@
 
 
     /* =====================================================
-       GALLERY PLACEHOLDER
-    ====================================================== */
-
-    function showGalleryComingSoon() {
-
-      const notice =
-        document.getElementById(
-          "galleryNotice"
-        );
-
-
-      if (notice) {
-
-        notice.classList.add(
-          "show"
-        );
-      }
-    }
-
-
-    /* =====================================================
        BACK TO MAIN MENU
     ====================================================== */
 
@@ -1148,23 +1331,9 @@
         );
 
 
-      const galleryNotice =
-        document.getElementById(
-          "galleryNotice"
-        );
-
-
       albumMenu.classList.remove(
         "show"
       );
-
-
-      if (galleryNotice) {
-
-        galleryNotice.classList.remove(
-          "show"
-        );
-      }
 
 
       mainMenu.classList.add(
@@ -1250,6 +1419,10 @@
     </h1>
 
 
+    <!-- ===================================================
+         HOME SCREEN INTRO
+    ==================================================== -->
+
     <div
       id="launchMessage"
       class="launch-message"
@@ -1264,6 +1437,10 @@
     </div>
 
 
+    <!-- ===================================================
+         MAIN MENU
+    ==================================================== -->
+
     <div
       id="mainMenu"
       class="menu"
@@ -1273,6 +1450,8 @@
         Bé muốn làm gì nèeee? 💕
       </div>
 
+
+      <!-- UPLOAD -->
 
       <a
         id="uploadLink"
@@ -1300,6 +1479,8 @@
 
       </a>
 
+
+      <!-- VIEW -->
 
       <button
         type="button"
@@ -1330,6 +1511,10 @@
     </div>
 
 
+    <!-- ===================================================
+         ALBUM MENU
+    ==================================================== -->
+
     <div
       id="albumMenu"
       class="menu"
@@ -1340,10 +1525,12 @@
       </div>
 
 
-      <button
-        type="button"
+      <!-- BABY -->
+
+      <a
+        id="galleryBabyLink"
         class="app-button baby-button"
-        onclick="showGalleryComingSoon()"
+        href="#"
       >
 
         <span class="button-icon">
@@ -1364,13 +1551,15 @@
 
         </span>
 
-      </button>
+      </a>
 
 
-      <button
-        type="button"
+      <!-- COUPLE -->
+
+      <a
+        id="galleryCoupleLink"
         class="app-button couple-button"
-        onclick="showGalleryComingSoon()"
+        href="#"
       >
 
         <span class="button-icon">
@@ -1391,17 +1580,87 @@
 
         </span>
 
-      </button>
+      </a>
 
 
-      <div
-        id="galleryNotice"
-        class="gallery-notice"
+      <!-- FAVORITES -->
+
+      <a
+        id="galleryFavoritesLink"
+        class="app-button favorites-button"
+        href="#"
       >
-        💕 Phần xem ảnh đang được anh nâng cấp nèeee.
-        Mình sẽ nối Gallery an toàn vào đây ở bước sau nhaaa 💗
-      </div>
 
+        <span class="button-icon">
+          ❤️
+        </span>
+
+
+        <span class="button-text">
+
+          <span class="button-title">
+            Kỷ niệm đặc biệt
+          </span>
+
+
+          <span class="button-subtitle">
+            Những tấm mình đã thả tim nằm ở đây nèeee
+          </span>
+
+        </span>
+
+      </a>
+
+
+      <!-- TIMELINE -->
+
+      <a
+        id="galleryTimelineLink"
+        class="app-button favorites-button"
+        href="#"
+      >
+
+        <span class="button-icon">
+          📖
+        </span>
+
+        <span class="button-text">
+          <span class="button-title">
+            Nhật ký kỷ niệm
+          </span>
+          <span class="button-subtitle">
+            Ảnh có ❤️ hoặc 💌 tự chạy vào dòng thời gian nèeee
+          </span>
+        </span>
+
+      </a>
+
+
+      <!-- COLLECTIONS -->
+
+      <a
+        id="collectionsLink"
+        class="app-button favorites-button"
+        href="#"
+      >
+
+        <span class="button-icon">
+          🎀
+        </span>
+
+        <span class="button-text">
+          <span class="button-title">
+            Bộ sưu tập
+          </span>
+          <span class="button-subtitle">
+            Gom ảnh thành từng câu chuyện riêng của tụi mình nhaaa
+          </span>
+        </span>
+
+      </a>
+
+
+      <!-- BACK -->
 
       <button
         type="button"
