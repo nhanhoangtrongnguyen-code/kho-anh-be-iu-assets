@@ -585,6 +585,23 @@
     }
 
 
+    .favorites-button {
+
+      color:
+        #ff3366;
+
+      background:
+        linear-gradient(
+          135deg,
+          #fff7fa,
+          #ffe8ef
+        );
+
+      border:
+        1px solid #ffb8c9;
+    }
+
+
 
     /* =====================================================
        BACK
@@ -787,7 +804,8 @@
 
         if (
           albumKey === "baby" ||
-          albumKey === "couple"
+          albumKey === "couple" ||
+          albumKey === "favorites"
         ) {
 
           params.set(
@@ -893,7 +911,8 @@
         continueTarget === "gallery" &&
         (
           continueAlbum === "baby" ||
-          continueAlbum === "couple"
+          continueAlbum === "couple" ||
+          continueAlbum === "favorites"
         )
       ) {
 
@@ -1013,6 +1032,12 @@
           );
 
 
+        const galleryFavoritesLink =
+          document.getElementById(
+            "galleryFavoritesLink"
+          );
+
+
         if (galleryBabyLink) {
 
           galleryBabyLink.href =
@@ -1031,6 +1056,17 @@
               storedCredential,
               "gallery",
               "couple"
+            );
+        }
+
+
+        if (galleryFavoritesLink) {
+
+          galleryFavoritesLink.href =
+            buildAppsScriptUrl(
+              storedCredential,
+              "gallery",
+              "favorites"
             );
         }
 
@@ -1377,6 +1413,35 @@
 
           <span class="button-subtitle">
             Mấy kỷ niệm có hai đứa mình ở đây nèee
+          </span>
+
+        </span>
+
+      </a>
+
+
+      <!-- FAVORITES -->
+
+      <a
+        id="galleryFavoritesLink"
+        class="app-button favorites-button"
+        href="#"
+      >
+
+        <span class="button-icon">
+          ❤️
+        </span>
+
+
+        <span class="button-text">
+
+          <span class="button-title">
+            Kỷ niệm đặc biệt
+          </span>
+
+
+          <span class="button-subtitle">
+            Những tấm mình đã thả tim nằm ở đây nèeee
           </span>
 
         </span>
