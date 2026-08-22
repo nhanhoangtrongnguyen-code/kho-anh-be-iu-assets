@@ -2154,8 +2154,21 @@
 
     function openProtectedVideoDriveV935(
       albumKey,
-      credentialOverride
+      credentialOverride,
+      clickEvent
     ) {
+      /*
+        V9.3.6 — click binding hardening.
+        The video buttons call this function directly from onclick,
+        so the flow does not depend on a later DOMContentLoaded listener.
+      */
+      if (
+        clickEvent &&
+        typeof clickEvent.preventDefault === "function"
+      ) {
+        clickEvent.preventDefault();
+      }
+
       if (albumKey !== "baby" && albumKey !== "couple") {
         return false;
       }
@@ -2172,7 +2185,7 @@
         window.location.assign(
           buildVideoAppsScriptUrlV931("", albumKey)
         );
-        return true;
+        return false;
       }
 
       cleanupVideoAuthV935();
@@ -2216,7 +2229,7 @@
       };
 
       document.body.appendChild(iframe);
-      return true;
+      return false;
     }
 
 
@@ -2353,38 +2366,6 @@
       if (mainMenu) mainMenu.classList.add("show");
     }
 
-
-    window.addEventListener(
-      "DOMContentLoaded",
-      function() {
-        const videoBabyLink =
-          document.getElementById("videoBabyLink");
-        const videoCoupleLink =
-          document.getElementById("videoCoupleLink");
-
-        if (videoBabyLink) {
-          videoBabyLink.href = "#";
-          videoBabyLink.addEventListener(
-            "click",
-            function(event) {
-              event.preventDefault();
-              openProtectedVideoDriveV935("baby");
-            }
-          );
-        }
-
-        if (videoCoupleLink) {
-          videoCoupleLink.href = "#";
-          videoCoupleLink.addEventListener(
-            "click",
-            function(event) {
-              event.preventDefault();
-              openProtectedVideoDriveV935("couple");
-            }
-          );
-        }
-      }
-    );
   </script>
 
 </head>
@@ -2748,6 +2729,7 @@
         id="videoBabyLink"
         class="app-button baby-button"
         href="#"
+        onclick="return openProtectedVideoDriveV935('baby', null, event)"
       >
         <span class="button-icon">🎬</span>
         <span class="button-text">
@@ -2762,6 +2744,7 @@
         id="videoCoupleLink"
         class="app-button couple-button"
         href="#"
+        onclick="return openProtectedVideoDriveV935('couple', null, event)"
       >
         <span class="button-icon">💕</span>
         <span class="button-text">
