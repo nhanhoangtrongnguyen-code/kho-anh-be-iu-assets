@@ -2046,6 +2046,131 @@
 
   </script>
 
+
+  <script>
+    /* =====================================================
+       V9.3.1 — VIDEO MENU ADD-ON
+
+       Additive only:
+       - Không sửa buildAppsScriptUrl() cũ.
+       - Không sửa updater V8.2.
+       - Không sửa photo/gallery/collections links cũ.
+       - Bắt riêng continue=video cho credential bridge.
+    ====================================================== */
+
+    function buildVideoAppsScriptUrlV931(credential, albumKey) {
+      const params = new URLSearchParams();
+
+      if (looksLikeDeviceCredential(credential)) {
+        params.set("deviceCredential", credential);
+      }
+
+      if (albumKey === "baby" || albumKey === "couple") {
+        params.set("view", "video");
+        params.set("album", albumKey);
+      }
+
+      const hash = params.toString();
+      return hash ? APP_URL + "#" + hash : APP_URL;
+    }
+
+
+    const originalConsumeCredentialBridgeV931 =
+      consumeCredentialBridge;
+
+    consumeCredentialBridge = function() {
+      const rawHash =
+        String(window.location.hash || "")
+          .replace(/^#/, "");
+
+      if (rawHash) {
+        const params = new URLSearchParams(rawHash);
+        const incomingCredential =
+          params.get("saveDeviceCredential") || "";
+        const continueTarget =
+          params.get("continue") || "";
+        const continueAlbum =
+          params.get("album") || "";
+
+        if (
+          continueTarget === "video" &&
+          (continueAlbum === "baby" || continueAlbum === "couple") &&
+          looksLikeDeviceCredential(incomingCredential) &&
+          saveLauncherCredential(incomingCredential)
+        ) {
+          try {
+            window.history.replaceState(
+              null,
+              "",
+              window.location.pathname + window.location.search
+            );
+          } catch (error) {}
+
+          window.location.replace(
+            buildVideoAppsScriptUrlV931(
+              incomingCredential,
+              continueAlbum
+            )
+          );
+
+          return true;
+        }
+      }
+
+      return originalConsumeCredentialBridgeV931();
+    };
+
+
+    function openVideoMenu() {
+      const mainMenu = document.getElementById("mainMenu");
+      const albumMenu = document.getElementById("albumMenu");
+      const videoMenu = document.getElementById("videoMenu");
+
+      if (mainMenu) mainMenu.classList.remove("show");
+      if (albumMenu) albumMenu.classList.remove("show");
+      if (videoMenu) videoMenu.classList.add("show");
+    }
+
+
+    function backFromVideoMenu() {
+      const mainMenu = document.getElementById("mainMenu");
+      const videoMenu = document.getElementById("videoMenu");
+
+      if (videoMenu) videoMenu.classList.remove("show");
+      if (mainMenu) mainMenu.classList.add("show");
+    }
+
+
+    window.addEventListener(
+      "DOMContentLoaded",
+      function() {
+        const storedCredential =
+          getStoredLauncherCredential();
+
+        const videoBabyLink =
+          document.getElementById("videoBabyLink");
+        const videoCoupleLink =
+          document.getElementById("videoCoupleLink");
+
+        if (videoBabyLink) {
+          videoBabyLink.href =
+            buildVideoAppsScriptUrlV931(
+              storedCredential,
+              "baby"
+            );
+        }
+
+        if (videoCoupleLink) {
+          videoCoupleLink.href =
+            buildVideoAppsScriptUrlV931(
+              storedCredential,
+              "couple"
+            );
+        }
+      }
+    );
+  </script>
+
 </head>
 
 
@@ -2163,7 +2288,7 @@
       >
 
         <span class="button-icon">
-          🐶
+          📸
         </span>
 
 
@@ -2192,7 +2317,7 @@
       >
 
         <span class="button-icon">
-          🐱
+          🖼️
         </span>
 
 
@@ -2209,6 +2334,23 @@
 
         </span>
 
+      </button>
+
+
+      <!-- VIDEO — V9.3.1 ADD-ON -->
+
+      <button
+        type="button"
+        class="app-button view-button"
+        onclick="openVideoMenu()"
+      >
+        <span class="button-icon">🎬</span>
+        <span class="button-text">
+          <span class="button-title">Xem video</span>
+          <span class="button-subtitle">
+            Mở kho video của bé hoặc của tụi mình nèeee 💕
+          </span>
+        </span>
       </button>
 
     </div>
@@ -2369,6 +2511,55 @@
         type="button"
         class="back-button"
         onclick="backToMainMenu()"
+      >
+        ← Quay lại nèeee
+      </button>
+
+    </div>
+
+
+    <!-- ===================================================
+         VIDEO MENU — V9.3.1 ADD-ON
+    ==================================================== -->
+
+    <div id="videoMenu" class="menu">
+
+      <div class="menu-title">
+        Bé muốn xem kho video nào nèeee? 🎬💕
+      </div>
+
+      <a
+        id="videoBabyLink"
+        class="app-button baby-button"
+        href="#"
+      >
+        <span class="button-icon">🎬</span>
+        <span class="button-text">
+          <span class="button-title">Video của bé</span>
+          <span class="button-subtitle">
+            Kho video riêng của bé ở Google Drive nèeee 🌸
+          </span>
+        </span>
+      </a>
+
+      <a
+        id="videoCoupleLink"
+        class="app-button couple-button"
+        href="#"
+      >
+        <span class="button-icon">💕</span>
+        <span class="button-text">
+          <span class="button-title">Video của tụi mình</span>
+          <span class="button-subtitle">
+            Mấy video có hai đứa mình ở đây nèeee 🎬
+          </span>
+        </span>
+      </a>
+
+      <button
+        type="button"
+        class="back-button"
+        onclick="backFromVideoMenu()"
       >
         ← Quay lại nèeee
       </button>
