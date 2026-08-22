@@ -2049,7 +2049,7 @@
 
   <script>
     /* =====================================================
-       V9.3.7 — SHARED-CREDENTIAL VIDEO → DRIVE REDIRECT
+       V9.3.8A — SHARED-CREDENTIAL VIDEO → DRIVE REDIRECT
 
        Chỉ thay luồng Xem video → Drive.
        - Dùng CHUNG SECURITY_STORAGE_KEY của ảnh.
@@ -2385,6 +2385,8 @@
           params.get("continue") || "";
         const continueAlbum =
           params.get("album") || "";
+        const continueVideoDriveUrl =
+          params.get("videoDriveUrl") || "";
 
         if (
           continueTarget === "video" &&
@@ -2392,6 +2394,16 @@
           looksLikeDeviceCredential(incomingCredential) &&
           saveLauncherCredential(incomingCredential)
         ) {
+          const safeVideoDriveUrl =
+            /^https:\/\/drive\.google\.com\/drive\/folders\/[A-Za-z0-9_-]+(?:[/?#].*)?$/
+              .test(continueVideoDriveUrl)
+              ? continueVideoDriveUrl
+              : "";
+
+          /*
+            Xóa credential + Drive URL khỏi address bar/history
+            trước khi tiếp tục.
+          */
           try {
             window.history.replaceState(
               null,
@@ -2401,8 +2413,25 @@
           } catch (error) {}
 
           /*
-            Credential vừa enrollment vẫn là credential CHUNG.
-            Nếu đây là popup do menu video mở ra, reuse chính popup đó.
+            V9.3.8A:
+            Sau enrollment, Apps Script đã dùng CHÍNH credential mới
+            để gọi getProtectedVideoArchiveV93DriveLink() và chỉ khi
+            server trả success mới đưa videoDriveUrl vào fragment.
+
+            GitHub đang là top-level page, nên tự điều hướng chính nó
+            sang Drive; không phụ thuộc window.opener, iframe sandbox
+            hay một window.open() mới sau callback.
+          */
+          if (safeVideoDriveUrl) {
+            window.location.replace(
+              safeVideoDriveUrl
+            );
+            return true;
+          }
+
+          /*
+            Fallback tương thích nếu fragment đến từ bản cũ
+            chưa có videoDriveUrl.
           */
           window.setTimeout(
             function() {
