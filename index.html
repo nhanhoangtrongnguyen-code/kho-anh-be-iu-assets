@@ -848,7 +848,9 @@
           albumKey === "baby" ||
           albumKey === "couple" ||
           albumKey === "favorites" ||
-          albumKey === "timeline"
+          albumKey === "timeline" ||
+          albumKey === "video_baby" ||
+          albumKey === "video_couple"
         ) {
 
           params.set(
@@ -960,7 +962,9 @@
           continueAlbum === "baby" ||
           continueAlbum === "couple" ||
           continueAlbum === "favorites" ||
-          continueAlbum === "timeline"
+          continueAlbum === "timeline" ||
+          continueAlbum === "video_baby" ||
+          continueAlbum === "video_couple"
         )
       ) {
 
@@ -1818,6 +1822,18 @@
           );
 
 
+        const galleryVideoBabyLink =
+          document.getElementById(
+            "galleryVideoBabyLink"
+          );
+
+
+        const galleryVideoCoupleLink =
+          document.getElementById(
+            "galleryVideoCoupleLink"
+          );
+
+
         if (galleryBabyLink) {
 
           galleryBabyLink.href =
@@ -1869,6 +1885,26 @@
               storedCredential,
               "collections",
               ""
+            );
+        }
+
+
+        if (galleryVideoBabyLink) {
+          galleryVideoBabyLink.href =
+            buildAppsScriptUrl(
+              storedCredential,
+              "gallery",
+              "video_baby"
+            );
+        }
+
+
+        if (galleryVideoCoupleLink) {
+          galleryVideoCoupleLink.href =
+            buildAppsScriptUrl(
+              storedCredential,
+              "gallery",
+              "video_couple"
             );
         }
 
@@ -2431,7 +2467,7 @@
         <span class="button-text">
 
           <span class="button-title">
-            Xem ảnh
+            Xem kỷ niệm
           </span>
 
 
@@ -2443,22 +2479,6 @@
 
       </button>
 
-
-      <!-- VIDEO — V9.3.1 ADD-ON -->
-
-      <button
-        type="button"
-        class="app-button view-button"
-        onclick="openVideoMenu()"
-      >
-        <span class="button-icon">🫧</span>
-        <span class="button-text">
-          <span class="button-title">Xem video</span>
-          <span class="button-subtitle">
-            Bé muốn xem kho nào thì chọn nèeee 💕
-          </span>
-        </span>
-      </button>
 
     </div>
 
@@ -2473,7 +2493,7 @@
     >
 
       <div class="menu-title">
-        Bé muốn xem album nào nèeee? 💕
+        Bé muốn xem kỷ niệm nào nèeee? 💕
       </div>
 
 
@@ -2535,6 +2555,39 @@
       </a>
 
 
+      <!-- VIDEO CỦA BÉ -->
+
+      <a
+        id="galleryVideoBabyLink"
+        class="app-button baby-button"
+        href="#"
+      >
+        <span class="button-icon">👸</span>
+        <span class="button-text">
+          <span class="button-title">Video của bé</span>
+          <span class="button-subtitle">
+            Kho video riêng anh cất cho bé nèeee
+          </span>
+        </span>
+      </a>
+
+
+      <!-- VIDEO CỦA TỤI MÌNH -->
+
+      <a
+        id="galleryVideoCoupleLink"
+        class="app-button couple-button"
+        href="#"
+      >
+        <span class="button-icon icon-pair">🤴👸</span>
+        <span class="button-text">
+          <span class="button-title">Video của tụi mình</span>
+          <span class="button-subtitle">
+            Mấy kỷ niệm có hai đứa mình ở đây nèee
+          </span>
+        </span>
+      </a>
+
       <!-- FAVORITES -->
 
       <a
@@ -2556,7 +2609,7 @@
 
 
           <span class="button-subtitle">
-            Những tấm mình đã thả tim nằm ở đây nèeee
+            Những kỷ niệm mình đã thả tim nằm ở đây nèeee
           </span>
 
         </span>
@@ -2581,7 +2634,7 @@
             Nhật ký kỷ niệm
           </span>
           <span class="button-subtitle">
-            Ảnh có ❤️ hoặc 💌 tự chạy vào dòng thời gian nèeee
+            Ảnh hay video có ❤️ hoặc 💌 tự chạy vào dòng thời gian nèeee
           </span>
         </span>
 
