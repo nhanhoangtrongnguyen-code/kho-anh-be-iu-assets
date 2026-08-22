@@ -712,7 +712,13 @@
         );
     }
 
-  </style>
+  
+
+    @keyframes videoPulseV9310 {
+      from { transform: scale(0.96); opacity: 0.72; }
+      to   { transform: scale(1.04); opacity: 1; }
+    }
+</style>
 
 
   <script>
@@ -2049,27 +2055,19 @@
 
   <script>
     /* =====================================================
-       V9.3.9 — SHARED-CREDENTIAL VIDEO → DRIVE REDIRECT
+       V9.3.10 — VIDEO ROUTE WITH IMMEDIATE FEEDBACK
 
-       Chỉ thay luồng Xem video → Drive.
-       - Dùng CHUNG SECURITY_STORAGE_KEY của ảnh.
-       - Không mở popup/tab Apps Script để xác minh video.
-       - Apps Script helper chạy trong iframe ẩn và CHỈ xác minh credential.
-       - Helper postMessage kết quả về GitHub top-level.
-       - Chính GitHub top-level tự điều hướng sang Drive sau khi server xác minh.
-       - Nếu chưa có / credential hỏng: dùng enrollment hiện có của ảnh.
-       - Credential mới vẫn lưu vào CHUNG GitHub localStorage.
-       - Không có credential riêng cho video.
+       Mục tiêu:
+       - Dùng CHUNG SECURITY_STORAGE_KEY với ảnh.
+       - Bấm kho video → UI đổi trạng thái NGAY, tránh cảm giác lag.
+       - Sau đó điều hướng top-level sang Apps Script view=video.
+       - Apps Script xác minh credential trên server và hiện bước trung gian.
+       - Người dùng bấm một lần để mở app Google Drive trên iPhone.
+       - Không dùng hidden iframe / popup / opener cho video viewing.
        - Không sửa upload ảnh/video, Gallery, backup hay chronology.
     ====================================================== */
 
-    const VIDEO_AUTH_V935_QUERY =
-      "?videoAuthV935=1";
-
-    let videoAuthV935State = null;
-
-
-    function buildVideoAppsScriptUrlV931(credential, albumKey) {
+    function buildVideoAppsScriptUrlV9310(credential, albumKey) {
       const params = new URLSearchParams();
 
       if (looksLikeDeviceCredential(credential)) {
@@ -2086,147 +2084,47 @@
     }
 
 
-    function makeVideoAuthNonceV935() {
+    function showVideoOpeningStateV9310(albumKey) {
+      const videoMenu = document.getElementById("videoMenu");
+      if (!videoMenu) return;
+
+      let status = document.getElementById("videoOpeningStateV9310");
+
+      if (!status) {
+        status = document.createElement("div");
+        status.id = "videoOpeningStateV9310";
+        status.style.padding = "26px 14px 18px";
+        status.style.textAlign = "center";
+        status.style.color = "#ff4d79";
+        status.innerHTML =
+          '<div style="font-size:38px;margin-bottom:12px;animation:videoPulseV9310 0.9s ease-in-out infinite alternate">🎬</div>' +
+          '<div style="font-size:16px;font-weight:750;line-height:1.45">Anh đang mở kho video nèeee 💕</div>' +
+          '<div id="videoOpeningSubV9310" style="margin-top:8px;font-size:12.5px;color:#888;line-height:1.5"></div>';
+        videoMenu.appendChild(status);
+      }
+
+      const sub = document.getElementById("videoOpeningSubV9310");
+      if (sub) {
+        sub.textContent =
+          albumKey === "baby"
+            ? "Đang kiểm tra kho Video của bé... 🌸"
+            : "Đang kiểm tra kho Video của tụi mình... 💕";
+      }
+
+      Array.from(videoMenu.children).forEach(function(child) {
+        if (child !== status) child.style.display = "none";
+      });
+      status.style.display = "block";
+
       try {
-        const bytes = new Uint8Array(16);
-        crypto.getRandomValues(bytes);
-        return Array.from(bytes)
-          .map(function(value) {
-            return value.toString(16).padStart(2, "0");
-          })
-          .join("");
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } catch (error) {
-        return (
-          Date.now().toString(36) +
-          Math.random().toString(36).slice(2)
-        );
+        window.scrollTo(0, 0);
       }
     }
 
 
-    function cleanupVideoAuthV935() {
-      if (!videoAuthV935State) return;
-
-      if (videoAuthV935State.timer) {
-        window.clearTimeout(videoAuthV935State.timer);
-      }
-
-      if (videoAuthV935State.iframe) {
-        try {
-          videoAuthV935State.iframe.remove();
-        } catch (error) {
-          try {
-            if (videoAuthV935State.iframe.parentNode) {
-              videoAuthV935State.iframe.parentNode.removeChild(
-                videoAuthV935State.iframe
-              );
-            }
-          } catch (ignored) {}
-        }
-      }
-
-      videoAuthV935State = null;
-    }
-
-
-    function clearSharedLauncherCredentialV935() {
-      /* Chính key chung với Xem ảnh / Upload ảnh. */
-      try {
-        localStorage.removeItem(SECURITY_STORAGE_KEY);
-      } catch (error) {}
-    }
-
-
-    function isTrustedVideoAuthOriginV935(origin) {
-      try {
-        const url = new URL(origin);
-        const host = String(url.hostname || "").toLowerCase();
-
-        return (
-          url.protocol === "https:" &&
-          (
-            host === "script.google.com" ||
-            host.endsWith(".googleusercontent.com")
-          )
-        );
-      } catch (error) {
-        return false;
-      }
-    }
-
-
-    function startVideoAuthInHiddenFrameV939(
-      albumKey,
-      credential
-    ) {
-      if (
-        (albumKey !== "baby" && albumKey !== "couple") ||
-        !looksLikeDeviceCredential(credential)
-      ) {
-        return false;
-      }
-
-      cleanupVideoAuthV935();
-
-      const nonce = makeVideoAuthNonceV935();
-      const hash = new URLSearchParams();
-      hash.set("deviceCredential", credential);
-      hash.set("album", albumKey);
-      hash.set("nonce", nonce);
-
-      const iframe = document.createElement("iframe");
-      iframe.setAttribute("aria-hidden", "true");
-      iframe.setAttribute("tabindex", "-1");
-      iframe.style.position = "fixed";
-      iframe.style.width = "1px";
-      iframe.style.height = "1px";
-      iframe.style.opacity = "0";
-      iframe.style.pointerEvents = "none";
-      iframe.style.border = "0";
-      iframe.style.left = "-9999px";
-      iframe.style.top = "-9999px";
-
-      const timer = window.setTimeout(
-        function() {
-          cleanupVideoAuthV935();
-          window.alert(
-            "Anh chưa xác minh được kho video lúc này 🥺 Bé thử lại một lần nhaaa."
-          );
-        },
-        20000
-      );
-
-      videoAuthV935State = {
-        nonce: nonce,
-        albumKey: albumKey,
-        iframe: iframe,
-        timer: timer
-      };
-
-      iframe.src =
-        APP_URL +
-        VIDEO_AUTH_V935_QUERY +
-        "#" +
-        hash.toString();
-
-      try {
-        document.body.appendChild(iframe);
-        return true;
-      } catch (error) {
-        cleanupVideoAuthV935();
-        window.alert(
-          "Anh chưa mở được bước xác minh video rùi 🥺 Bé thử lại nhaaa."
-        );
-        return false;
-      }
-    }
-
-
-    function openProtectedVideoDriveV935(
-      albumKey,
-      credentialOverride,
-      clickEvent
-    ) {
+    function openProtectedVideoDriveV9310(albumKey, clickEvent) {
       if (
         clickEvent &&
         typeof clickEvent.preventDefault === "function"
@@ -2238,97 +2136,29 @@
         return false;
       }
 
-      const credential =
-        looksLikeDeviceCredential(credentialOverride)
-          ? credentialOverride
-          : getStoredLauncherCredential();
+      const credential = getStoredLauncherCredential();
 
-      /*
-        Chưa có credential chung → đi qua ĐÚNG enrollment hiện có của ảnh.
-        Không tạo credential riêng cho video.
-      */
-      if (!looksLikeDeviceCredential(credential)) {
-        cleanupVideoAuthV935();
-        window.location.assign(
-          buildVideoAppsScriptUrlV931("", albumKey)
-        );
-        return false;
-      }
+      /* Paint feedback first, then navigate on the next frames. */
+      showVideoOpeningStateV9310(albumKey);
 
-      /*
-        Có credential chung → helper iframe ẩn chỉ xác minh server.
-        GitHub top-level sẽ tự redirect sang Drive khi nhận success.
-      */
-      startVideoAuthInHiddenFrameV939(
-        albumKey,
-        credential
-      );
+      window.requestAnimationFrame(function() {
+        window.requestAnimationFrame(function() {
+          window.setTimeout(function() {
+            window.location.assign(
+              buildVideoAppsScriptUrlV9310(
+                credential,
+                albumKey
+              )
+            );
+          }, 40);
+        });
+      });
 
       return false;
     }
 
 
-    window.addEventListener(
-      "message",
-      function(event) {
-        if (
-          !videoAuthV935State ||
-          !isTrustedVideoAuthOriginV935(event.origin)
-        ) {
-          return;
-        }
-
-        const data = event.data || {};
-
-        if (
-          data.type !== "kho-anh-video-auth-v935" ||
-          String(data.nonce || "") !== videoAuthV935State.nonce ||
-          String(data.albumKey || "") !== videoAuthV935State.albumKey
-        ) {
-          return;
-        }
-
-        const albumKey = videoAuthV935State.albumKey;
-
-        if (
-          data.success === true &&
-          typeof data.url === "string" &&
-          /^https:\/\/drive\.google\.com\/drive\/folders\//.test(data.url)
-        ) {
-          const driveUrl = data.url;
-          cleanupVideoAuthV935();
-
-          /*
-            Đây là navigation của CHÍNH GitHub top-level,
-            không phải Apps Script sandbox → không cần user activation mới.
-          */
-          window.location.assign(driveUrl);
-          return;
-        }
-
-        if (
-          data.code === "device-auth-required" ||
-          data.code === "invalid-device-credential"
-        ) {
-          cleanupVideoAuthV935();
-          clearSharedLauncherCredentialV935();
-
-          window.location.assign(
-            buildVideoAppsScriptUrlV931("", albumKey)
-          );
-          return;
-        }
-
-        cleanupVideoAuthV935();
-        window.alert(
-          data.error ||
-          "Anh chưa mở được kho video rùi 🥺 Bé thử lại nhaaa."
-        );
-      }
-    );
-
-
-    const originalConsumeCredentialBridgeV931 =
+    const originalConsumeCredentialBridgeV9310 =
       consumeCredentialBridge;
 
     consumeCredentialBridge = function() {
@@ -2351,7 +2181,6 @@
           looksLikeDeviceCredential(incomingCredential) &&
           saveLauncherCredential(incomingCredential)
         ) {
-          /* Xóa secret fragment khỏi GitHub history ngay. */
           try {
             window.history.replaceState(
               null,
@@ -2360,20 +2189,28 @@
             );
           } catch (error) {}
 
-          /*
-            Credential vừa enrollment vẫn là credential CHUNG.
-            Không mở popup mới: xác minh bằng iframe ẩn rồi self-redirect Drive.
-          */
-          startVideoAuthInHiddenFrameV939(
-            continueAlbum,
-            incomingCredential
-          );
+          /* Enrollment xong → hiện feedback ngay rồi quay lại route video. */
+          openVideoMenu();
+          showVideoOpeningStateV9310(continueAlbum);
+
+          window.requestAnimationFrame(function() {
+            window.requestAnimationFrame(function() {
+              window.setTimeout(function() {
+                window.location.replace(
+                  buildVideoAppsScriptUrlV9310(
+                    incomingCredential,
+                    continueAlbum
+                  )
+                );
+              }, 60);
+            });
+          });
 
           return true;
         }
       }
 
-      return originalConsumeCredentialBridgeV931();
+      return originalConsumeCredentialBridgeV9310();
     };
 
 
@@ -2381,9 +2218,15 @@
       const mainMenu = document.getElementById("mainMenu");
       const videoMenu = document.getElementById("videoMenu");
 
-      cleanupVideoAuthV935();
       if (mainMenu) mainMenu.classList.remove("show");
-      if (videoMenu) videoMenu.classList.add("show");
+      if (videoMenu) {
+        Array.from(videoMenu.children).forEach(function(child) {
+          child.style.display = "";
+        });
+        const status = document.getElementById("videoOpeningStateV9310");
+        if (status) status.style.display = "none";
+        videoMenu.classList.add("show");
+      }
     }
 
 
@@ -2391,7 +2234,6 @@
       const videoMenu = document.getElementById("videoMenu");
       const mainMenu = document.getElementById("mainMenu");
 
-      cleanupVideoAuthV935();
       if (videoMenu) videoMenu.classList.remove("show");
       if (mainMenu) mainMenu.classList.add("show");
     }
@@ -2758,7 +2600,7 @@
         id="videoBabyLink"
         class="app-button baby-button"
         href="#"
-        onclick="return openProtectedVideoDriveV935('baby', null, event)"
+        onclick="return openProtectedVideoDriveV9310('baby', event)"
       >
         <span class="button-icon">🎬</span>
         <span class="button-text">
@@ -2773,7 +2615,7 @@
         id="videoCoupleLink"
         class="app-button couple-button"
         href="#"
-        onclick="return openProtectedVideoDriveV935('couple', null, event)"
+        onclick="return openProtectedVideoDriveV9310('couple', event)"
       >
         <span class="button-icon">💕</span>
         <span class="button-text">
