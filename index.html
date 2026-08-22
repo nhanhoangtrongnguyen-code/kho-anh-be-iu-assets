@@ -2049,15 +2049,16 @@
 
   <script>
     /* =====================================================
-       V9.3.5 — SHARED-CREDENTIAL VIDEO → DRIVE REDIRECT
+       V9.3.7 — SHARED-CREDENTIAL VIDEO → DRIVE REDIRECT
 
        Chỉ thay luồng Xem video → Drive.
        - Dùng CHUNG SECURITY_STORAGE_KEY của ảnh.
-       - Có credential: helper ẩn xác minh server rồi GitHub top-level
-         chuyển thẳng sang đúng folder Drive.
-       - Không có / credential hỏng: quay về đúng flow nhập mật mã
-         hiện có của Apps Script. Sau khi credential được lưu về
-         GitHub, helper xác minh lại rồi mới mở Drive.
+       - Không dùng hidden third-party iframe nữa.
+       - Tap video mở một cửa sổ/tab bridge bằng chính user gesture.
+       - Bridge Apps Script xác minh credential trên server.
+       - Chỉ sau khi hợp lệ, chính cửa sổ/tab bridge được đưa tới Drive.
+       - Không có / credential hỏng: cùng cửa sổ/tab đó đi qua enrollment
+         hiện có; credential mới vẫn được lưu vào CHUNG GitHub localStorage.
        - Không có credential riêng cho video.
        - Không sửa upload ảnh/video, Gallery, backup hay chronology.
     ====================================================== */
@@ -2103,7 +2104,7 @@
     }
 
 
-    function cleanupVideoAuthV935() {
+    function cleanupVideoAuthV935(closeAuthWindow) {
       if (!videoAuthV935State) return;
 
       if (videoAuthV935State.timer) {
@@ -2111,12 +2112,13 @@
       }
 
       if (
-        videoAuthV935State.iframe &&
-        videoAuthV935State.iframe.parentNode
+        closeAuthWindow === true &&
+        videoAuthV935State.authWindow &&
+        !videoAuthV935State.authWindow.closed
       ) {
-        videoAuthV935State.iframe.parentNode.removeChild(
-          videoAuthV935State.iframe
-        );
+        try {
+          videoAuthV935State.authWindow.close();
+        } catch (error) {}
       }
 
       videoAuthV935State = null;
@@ -2124,10 +2126,7 @@
 
 
     function clearSharedLauncherCredentialV935() {
-      /*
-        Chính key chung với Xem ảnh / Upload ảnh.
-        Nếu server từ chối credential, toàn app phải enroll lại.
-      */
+      /* Chính key chung với Xem ảnh / Upload ảnh. */
       try {
         localStorage.removeItem(SECURITY_STORAGE_KEY);
       } catch (error) {}
@@ -2152,16 +2151,69 @@
     }
 
 
+    function startVideoAuthInWindowV937(
+      albumKey,
+      credential,
+      authWindow
+    ) {
+      if (
+        (albumKey !== "baby" && albumKey !== "couple") ||
+        !looksLikeDeviceCredential(credential) ||
+        !authWindow ||
+        authWindow.closed
+      ) {
+        return false;
+      }
+
+      cleanupVideoAuthV935(true);
+
+      const nonce = makeVideoAuthNonceV935();
+      const hash = new URLSearchParams();
+      hash.set("deviceCredential", credential);
+      hash.set("album", albumKey);
+      hash.set("nonce", nonce);
+
+      const timer = window.setTimeout(
+        function() {
+          cleanupVideoAuthV935(true);
+          window.alert(
+            "Anh chưa xác minh được kho video lúc này 🥺 Bé thử lại một lần nhaaa."
+          );
+        },
+        15000
+      );
+
+      videoAuthV935State = {
+        nonce: nonce,
+        albumKey: albumKey,
+        authWindow: authWindow,
+        timer: timer
+      };
+
+      try {
+        authWindow.location.href =
+          APP_URL +
+          VIDEO_AUTH_V935_QUERY +
+          "#" +
+          hash.toString();
+
+        try { authWindow.focus(); } catch (focusError) {}
+        return true;
+      } catch (error) {
+        cleanupVideoAuthV935(true);
+        window.alert(
+          "Anh chưa mở được bước xác minh video rùi 🥺 Bé thử lại nhaaa."
+        );
+        return false;
+      }
+    }
+
+
     function openProtectedVideoDriveV935(
       albumKey,
       credentialOverride,
       clickEvent
     ) {
-      /*
-        V9.3.6 — click binding hardening.
-        The video buttons call this function directly from onclick,
-        so the flow does not depend on a later DOMContentLoaded listener.
-      */
       if (
         clickEvent &&
         typeof clickEvent.preventDefault === "function"
@@ -2179,56 +2231,72 @@
           : getStoredLauncherCredential();
 
       /*
-        Không có credential chung → dùng đúng enrollment flow hiện có.
+        Sau enrollment, launcher được mở trong chính popup GitHub.
+        Khi đó reuse popup hiện tại và nhờ opener chính bắt đầu auth.
       */
-      if (!looksLikeDeviceCredential(credential)) {
-        window.location.assign(
-          buildVideoAppsScriptUrlV931("", albumKey)
+      if (
+        !clickEvent &&
+        looksLikeDeviceCredential(credential) &&
+        window.opener &&
+        !window.opener.closed
+      ) {
+        try {
+          if (
+            window.opener.location.origin === window.location.origin &&
+            typeof window.opener.startVideoAuthInWindowV937 === "function"
+          ) {
+            window.opener.startVideoAuthInWindowV937(
+              albumKey,
+              credential,
+              window
+            );
+            return false;
+          }
+        } catch (error) {
+          // Rơi xuống fallback bên dưới.
+        }
+      }
+
+      /*
+        User tap trực tiếp → mở bridge window ngay trong user gesture.
+        Đây là điểm khác V9.3.5/6 và tránh hidden iframe bị browser chặn.
+      */
+      let authWindow = null;
+
+      try {
+        authWindow = window.open(
+          "about:blank",
+          "khoAnhVideoDriveV937"
+        );
+      } catch (error) {
+        authWindow = null;
+      }
+
+      if (!authWindow) {
+        window.alert(
+          "Trình duyệt đang chặn cửa sổ mở video 🥺 Bé cho phép pop-up cho Kho Ảnh rồi bấm lại nhaaa."
         );
         return false;
       }
 
-      cleanupVideoAuthV935();
+      /* Chưa có credential chung → cùng popup đi qua enrollment ảnh hiện có. */
+      if (!looksLikeDeviceCredential(credential)) {
+        try {
+          authWindow.location.href =
+            buildVideoAppsScriptUrlV931("", albumKey);
+          authWindow.focus();
+        } catch (error) {
+          try { authWindow.close(); } catch (closeError) {}
+        }
+        return false;
+      }
 
-      const nonce = makeVideoAuthNonceV935();
-      const hash = new URLSearchParams();
-      hash.set("deviceCredential", credential);
-      hash.set("album", albumKey);
-      hash.set("nonce", nonce);
-
-      const iframe = document.createElement("iframe");
-      iframe.setAttribute("aria-hidden", "true");
-      iframe.tabIndex = -1;
-      iframe.style.position = "fixed";
-      iframe.style.width = "1px";
-      iframe.style.height = "1px";
-      iframe.style.opacity = "0";
-      iframe.style.pointerEvents = "none";
-      iframe.style.border = "0";
-      iframe.src =
-        APP_URL +
-        VIDEO_AUTH_V935_QUERY +
-        "#" +
-        hash.toString();
-
-      const timer = window.setTimeout(
-        function() {
-          cleanupVideoAuthV935();
-          window.alert(
-            "Anh chưa xác minh được kho video lúc này 🥺 Bé thử lại một lần nhaaa."
-          );
-        },
-        12000
+      startVideoAuthInWindowV937(
+        albumKey,
+        credential,
+        authWindow
       );
 
-      videoAuthV935State = {
-        nonce: nonce,
-        albumKey: albumKey,
-        iframe: iframe,
-        timer: timer
-      };
-
-      document.body.appendChild(iframe);
       return false;
     }
 
@@ -2247,28 +2315,31 @@
 
         if (
           data.type !== "kho-anh-video-auth-v935" ||
-          String(data.nonce || "") !==
-            videoAuthV935State.nonce ||
-          String(data.albumKey || "") !==
-            videoAuthV935State.albumKey
+          String(data.nonce || "") !== videoAuthV935State.nonce ||
+          String(data.albumKey || "") !== videoAuthV935State.albumKey
         ) {
           return;
         }
 
         const albumKey = videoAuthV935State.albumKey;
-        cleanupVideoAuthV935();
+        const authWindow = videoAuthV935State.authWindow;
 
         if (
           data.success === true &&
           typeof data.url === "string" &&
-          /^https:\/\/drive\.google\.com\/drive\/folders\//
-            .test(data.url)
+          /^https:\/\/drive\.google\.com\/drive\/folders\//.test(data.url)
         ) {
-          /*
-            Điều hướng xảy ra ở GitHub top-level, không còn từ
-            Apps Script iframe nên tránh lỗi màn hồng trên iPhone.
-          */
-          window.location.assign(data.url);
+          cleanupVideoAuthV935(false);
+
+          try {
+            authWindow.location.href = data.url;
+            try { authWindow.focus(); } catch (focusError) {}
+          } catch (error) {
+            try { authWindow.close(); } catch (closeError) {}
+            window.alert(
+              "Anh xác minh xong rồi nhưng trình duyệt chưa mở được Drive 🥺 Bé thử lại nhaaa."
+            );
+          }
           return;
         }
 
@@ -2276,14 +2347,20 @@
           data.code === "device-auth-required" ||
           data.code === "invalid-device-credential"
         ) {
+          cleanupVideoAuthV935(false);
           clearSharedLauncherCredentialV935();
 
-          window.location.assign(
-            buildVideoAppsScriptUrlV931("", albumKey)
-          );
+          try {
+            authWindow.location.href =
+              buildVideoAppsScriptUrlV931("", albumKey);
+            try { authWindow.focus(); } catch (focusError) {}
+          } catch (error) {
+            try { authWindow.close(); } catch (closeError) {}
+          }
           return;
         }
 
+        cleanupVideoAuthV935(true);
         window.alert(
           data.error ||
           "Anh chưa mở được kho video rùi 🥺 Bé thử lại nhaaa."
@@ -2324,14 +2401,15 @@
           } catch (error) {}
 
           /*
-            Đây vẫn là CÙNG credential vừa được enrollment tạo ra.
-            Xác minh server lại trước khi mở Drive.
+            Credential vừa enrollment vẫn là credential CHUNG.
+            Nếu đây là popup do menu video mở ra, reuse chính popup đó.
           */
           window.setTimeout(
             function() {
               openProtectedVideoDriveV935(
                 continueAlbum,
-                incomingCredential
+                incomingCredential,
+                null
               );
             },
             0
@@ -2347,25 +2425,22 @@
 
     function openVideoMenu() {
       const mainMenu = document.getElementById("mainMenu");
-      const albumMenu = document.getElementById("albumMenu");
       const videoMenu = document.getElementById("videoMenu");
 
+      cleanupVideoAuthV935(true);
       if (mainMenu) mainMenu.classList.remove("show");
-      if (albumMenu) albumMenu.classList.remove("show");
       if (videoMenu) videoMenu.classList.add("show");
     }
 
 
     function backFromVideoMenu() {
-      const mainMenu = document.getElementById("mainMenu");
       const videoMenu = document.getElementById("videoMenu");
+      const mainMenu = document.getElementById("mainMenu");
 
-      cleanupVideoAuthV935();
-
+      cleanupVideoAuthV935(true);
       if (videoMenu) videoMenu.classList.remove("show");
       if (mainMenu) mainMenu.classList.add("show");
     }
-
   </script>
 
 </head>
