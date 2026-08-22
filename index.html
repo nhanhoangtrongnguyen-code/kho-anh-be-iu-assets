@@ -2055,7 +2055,7 @@
 
   <script>
     /* =====================================================
-       V9.3.10 — VIDEO ROUTE WITH IMMEDIATE FEEDBACK
+       V9.3.11 — VIDEO ROUTE WITH IMMEDIATE FEEDBACK + BACK GUARD
 
        Mục tiêu:
        - Dùng CHUNG SECURITY_STORAGE_KEY với ảnh.
@@ -2098,17 +2098,8 @@
         status.style.color = "#ff4d79";
         status.innerHTML =
           '<div style="font-size:38px;margin-bottom:12px;animation:videoPulseV9310 0.9s ease-in-out infinite alternate">🎬</div>' +
-          '<div style="font-size:16px;font-weight:750;line-height:1.45">Anh đang mở kho video nèeee 💕</div>' +
-          '<div id="videoOpeningSubV9310" style="margin-top:8px;font-size:12.5px;color:#888;line-height:1.5"></div>';
+          '<div style="font-size:16px;font-weight:750;line-height:1.45">Anh đang mở kho video cho bé nèeee 💕</div>';
         videoMenu.appendChild(status);
-      }
-
-      const sub = document.getElementById("videoOpeningSubV9310");
-      if (sub) {
-        sub.textContent =
-          albumKey === "baby"
-            ? "Đang kiểm tra kho Video của bé... 🌸"
-            : "Đang kiểm tra kho Video của tụi mình... 💕";
       }
 
       Array.from(videoMenu.children).forEach(function(child) {
@@ -2122,6 +2113,48 @@
         window.scrollTo(0, 0);
       }
     }
+
+
+    function restoreVideoMenuAfterBrowserBackV9311() {
+      const videoMenu = document.getElementById("videoMenu");
+      const status = document.getElementById("videoOpeningStateV9310");
+
+      if (!videoMenu || !status) return;
+
+      /*
+        Safari/iOS có thể phục hồi nguyên DOM loading từ bfcache khi bé
+        bấm nút Back của trình duyệt. Chỉ reset UI khi thực sự là back/forward;
+        nút "Quay lại Kho Ảnh" trong Apps Script vẫn giữ luồng cũ.
+      */
+      let isBackForward = false;
+
+      try {
+        const entries = performance.getEntriesByType("navigation");
+        if (entries && entries[0] && entries[0].type === "back_forward") {
+          isBackForward = true;
+        }
+      } catch (error) {}
+
+      if (!isBackForward) return;
+
+      if (status.style.display !== "none") {
+        openVideoMenu();
+      }
+    }
+
+
+    window.addEventListener("pageshow", function(event) {
+      if (event && event.persisted === true) {
+        const videoMenu = document.getElementById("videoMenu");
+        const status = document.getElementById("videoOpeningStateV9310");
+        if (videoMenu && status && status.style.display !== "none") {
+          openVideoMenu();
+          return;
+        }
+      }
+
+      restoreVideoMenuAfterBrowserBackV9311();
+    });
 
 
     function openProtectedVideoDriveV9310(albumKey, clickEvent) {
